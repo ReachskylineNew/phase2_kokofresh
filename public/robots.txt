@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://www.kokofresh.in
+
+# Sitemaps
+Sitemap: https://www.kokofresh.in/sitemap.xml

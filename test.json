@@ -1,0 +1,57 @@
+{
+  "info": {
+    "name": "Wix Ecom Cart Test",
+    "_postman_id": "3caa4c0a-9e91-4b71-9f50-2d7e4cfa76d9",
+    "description": "Test Wix add-to-cart and fetch cart APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Add to Cart (50gms)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer OauthNG.JWS.eyJraWQiOiJZSEJzdUpwSCIsImFsZyI6IkhTMjU2In0.eyJkYXRhIjoie1wiaW5zdGFuY2VcIjp7XCJpbnN0YW5jZUlkXCI6XCIxMjA2MmRhMi1lMmRlLTRiMjctOTg4NS00YWU2NmMwZDdkODRcIixcImFwcERlZklkXCI6XCI5ZDZjMGVmZC01YTNhLTQ2ZjUtYjNkZS00Y2RlOGRlZDdjNTdcIixcInNpZ25EYXRlXCI6XCIyMDI1LTA5LTE3VDE2OjEzOjI5LjAxN1pcIixcInBlcm1pc3Npb25zXCI6XCJcIixcImRlbW9Nb2RlXCI6ZmFsc2UsXCJzaXRlT3duZXJJZFwiOlwiY2Y3MWYyNjYtZjMwZi00YTg1LWIyMGItYWE4YzJiZjQwOTI4XCIsXCJhaWRcIjpcImFjMTE5NDQ1LWM5Y2ItNDc0My05NDliLTEwZjdlNjdhMDBiZFwiLFwibWV0YVNpdGVJZFwiOlwiYTZiNTg0N2UtZDdjOC00M2FlLWIyZWQtOTM3NGY0N2M5Zjg3XCIsXCJleHBpcmF0aW9uRGF0ZVwiOlwiMjAyNS0wOS0xN1QyMDoxMzoyOS4wMTdaXCJ9fSIsImlhdCI6MTc1ODEyNTYwOSwiZXhwIjoxNzU4MTQwMDA5fQ.ymy2xhclIKsCHzUGWmSLl4L3N_DTIB9_TBUdOAyNxd4",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"lineItems\": [\n    {\n      \"catalogReference\": {\n        \"appId\": \"1380b703-ce81-ff05-f115-39571d94dfcd\",\n        \"catalogItemId\": \"9881c267-5046-573e-10e0-8bdfc2cce75c\",\n        \"options\": {\n          \"weight\": \"50gms\"\n        }\n      },\n      \"quantity\": 1\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "https://www.wixapis.com/ecom/v1/carts/current/add-to-cart",
+          "protocol": "https",
+          "host": ["www", "wixapis", "com"],
+          "path": ["ecom", "v1", "carts", "current", "add-to-cart"]
+        }
+      }
+    },
+    {
+      "name": "Get Current Cart",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer OauthNG.JWS.eyJraWQiOiJZSEJzdUpwSCIsImFsZyI6IkhTMjU2In0.eyJkYXRhIjoie1wiaW5zdGFuY2VcIjp7XCJpbnN0YW5jZUlkXCI6XCIxMjA2MmRhMi1lMmRlLTRiMjctOTg4NS00YWU2NmMwZDdkODRcIixcImFwcERlZklkXCI6XCI5ZDZjMGVmZC01YTNhLTQ2ZjUtYjNkZS00Y2RlOGRlZDdjNTdcIixcInNpZ25EYXRlXCI6XCIyMDI1LTA5LTE3VDE2OjEzOjI5LjAxN1pcIixcInBlcm1pc3Npb25zXCI6XCJcIixcImRlbW9Nb2RlXCI6ZmFsc2UsXCJzaXRlT3duZXJJZFwiOlwiY2Y3MWYyNjYtZjMwZi00YTg1LWIyMGItYWE4YzJiZjQwOTI4XCIsXCJhaWRcIjpcImFjMTE5NDQ1LWM5Y2ItNDc0My05NDliLTEwZjdlNjdhMDBiZFwiLFwibWV0YVNpdGVJZFwiOlwiYTZiNTg0N2UtZDdjOC00M2FlLWIyZWQtOTM3NGY0N2M5Zjg3XCIsXCJleHBpcmF0aW9uRGF0ZVwiOlwiMjAyNS0wOS0xN1QyMDoxMzoyOS4wMTdaXCJ9fSIsImlhdCI6MTc1ODEyNTYwOSwiZXhwIjoxNzU4MTQwMDA5fQ.ymy2xhclIKsCHzUGWmSLl4L3N_DTIB9_TBUdOAyNxd4",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "https://www.wixapis.com/ecom/v1/carts/current",
+          "protocol": "https",
+          "host": ["www", "wixapis", "com"],
+          "path": ["ecom", "v1", "carts", "current"]
+        }
+      }
+    }
+  ]
+}
