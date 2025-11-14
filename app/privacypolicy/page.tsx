@@ -119,7 +119,7 @@ export default function PrivacyPage() {
           <div className="bg-white rounded-2xl p-8 border-2 border-[#DD9627]/30">
             <h2 className="font-serif font-bold text-3xl mb-4 text-[#3B2B13]">Introduction</h2>
             <p className="text-lg text-[#6B4A0F] leading-relaxed">
-              This Privacy Policy explains how CKG Flavorz Foodtech Pvt Ltd collects, uses, and protects your personal
+              This Privacy Policy explains how CKGFLAVORZ FOODTECH PRIVATE LIMITED collects, uses, and protects your personal
               data when you use our services via our Android and iOS applications. By using our platform, you agree to
               the terms outlined in this policy.
             </p>
@@ -408,7 +408,7 @@ export default function PrivacyPage() {
                 </p>
                 <div className="space-y-2">
                   <p className="text-[#6B4A0F]">
-                    <span className="font-semibold">CKG Flavorz Foodtech Pvt Ltd</span>
+                    <span className="font-semibold">CKGFLAVORZ FOODTECH PRIVATE LIMITED</span>
                   </p>
                   <a href="https://kokofresh.in" className="text-[#DD9627] hover:underline block">
                     https://kokofresh.in

@@ -14,11 +14,11 @@ export default function TermsPage() {
         <div className="max-w-4xl mx-auto px-4 md:px-6">
           <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">
             <span className="bg-gradient-to-r from-[#FED649] via-[#DD9627] to-[#B47B2B] bg-clip-text text-transparent">
-              Terms & Conditions
+              Terms of Use
             </span>
           </h1>
           <p className="text-gray-300 text-lg">
-            Please read these terms and conditions carefully before using our services. By accessing or using KOKO Fresh, you agree to be bound by these terms.
+            Please read these terms of use carefully before using our services. By accessing or using KOKO Fresh, you agree to be bound by these terms.
           </p>
         </div>
       </section>
@@ -100,7 +100,7 @@ export default function TermsPage() {
             <div className="bg-gray-50 rounded-lg p-6 md:p-8 border border-gray-200 hover:border-[#DD9627] transition-colors">
               <h2 className="text-2xl md:text-3xl font-serif font-bold text-black mb-4">6. Returns and Refunds</h2>
               <p className="text-gray-700 mb-4">
-                Please refer to our Refund Policy for detailed information about returns and refunds. The Refund Policy is incorporated into these Terms & Conditions by reference.
+                Please refer to our Refund Policy for detailed information about returns and refunds. The Refund Policy is incorporated into these Terms of Use by reference.
               </p>
               <p className="text-gray-700">
                 We reserve the right to refuse returns or refunds if the product has been damaged, tampered with, or used inappropriately.
@@ -142,7 +142,7 @@ export default function TermsPage() {
             <div className="bg-gray-50 rounded-lg p-6 md:p-8 border border-gray-200 hover:border-[#DD9627] transition-colors">
               <h2 className="text-2xl md:text-3xl font-serif font-bold text-black mb-4">9. Limitation of Liability</h2>
               <p className="text-gray-700 mb-4">
-                In no event shall KOKO Fresh, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential, or punitive damages.
+                In no event shall CKGFLAVORZ FOODTECH PRIVATE LIMITED, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential, or punitive damages.
               </p>
               <p className="text-gray-700">
                 Our total liability shall not exceed the amount paid by you for the products purchased.
@@ -172,9 +172,12 @@ export default function TermsPage() {
             <div className="bg-gray-50 rounded-lg p-6 md:p-8 border border-gray-200 hover:border-[#DD9627] transition-colors">
               <h2 className="text-2xl md:text-3xl font-serif font-bold text-black mb-4">12. Contact Information</h2>
               <p className="text-gray-700 mb-4">
-                If you have any questions about these Terms & Conditions, please contact us:
+                If you have any questions about these Terms of Use, please contact us:
               </p>
               <div className="space-y-2">
+                <p className="text-gray-700">
+                  <strong>Business Name:</strong> CKGFLAVORZ FOODTECH PRIVATE LIMITED
+                </p>
                 <p className="text-gray-700">
                   <strong>Email:</strong> help@kokofresh.in
                 </p>
@@ -182,7 +185,7 @@ export default function TermsPage() {
                   <strong>Phone:</strong> +91-7892776610
                 </p>
                 <p className="text-gray-700">
-                  <strong>Address:</strong> CKGFlavorz FoodTech Pvt Ltd, 112, 17th main road, MIG KHB Colony, 5th block, Koramangala, Bangalore 560095
+                  <strong>Address:</strong> 112, 17th main road, MIG KHB Colony, 5th block, Koramangala, Bangalore 560095
                 </p>
               </div>
             </div>
@@ -195,7 +198,7 @@ export default function TermsPage() {
         <div className="max-w-4xl mx-auto px-4 md:px-6 text-center">
           <h2 className="text-3xl md:text-4xl font-serif font-bold mb-4">Questions About Our Terms?</h2>
           <p className="text-gray-300 mb-8 text-lg">
-            We're here to help clarify any concerns you might have about our terms and conditions.
+            We're here to help clarify any concerns you might have about our terms of use.
           </p>
           <a
             href="/contact"
