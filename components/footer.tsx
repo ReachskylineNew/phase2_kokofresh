@@ -107,7 +107,7 @@ export function Footer() {
           <div>
             <h3 className="font-serif text-lg font-semibold mb-4 text-white">Support</h3>
             <ul className="space-y-2">
-              {["Shipping", "Privacy Policy","Refund"].map((item, idx) => (
+              {["Shipping", "Privacy Policy", "Refund", "Terms"].map((item, idx) => (
                 <li key={idx}>
                   <Link
                     href={`/${item.toLowerCase().replace(/ /g, "")}`}
