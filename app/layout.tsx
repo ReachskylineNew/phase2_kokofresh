@@ -18,7 +18,7 @@ import { CustomToaster } from "@/components/CustomToaster"
 export const metadata: Metadata = {
   title: "Flavourz - Premium Indian Spices",
   description: "Flavourz. Fresh, Fun, Yours. Premium Indian spices for the modern kitchen.",
-  generator: "v0.app",
+  generator: "rajesh",
   icons: {
     icon: [
       { url: "/favicon.ico" },
@@ -57,6 +57,7 @@ export default function RootLayout({
           async
           defer
         ></script>
+        
       </head>
 
       <body className="font-sans antialiased">
@@ -72,7 +73,7 @@ export default function RootLayout({
         </Suspense>
         <Analytics />
 <CustomToaster/>
- <Script
+        <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-EPBVY275H2"
           strategy="afterInteractive"
         />
@@ -82,6 +83,15 @@ export default function RootLayout({
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
             gtag('config', 'G-EPBVY275H2');
+          `}
+        </Script>
+        <Script id="clarity-script" strategy="afterInteractive">
+          {`
+            (function(c,l,a,r,i,t,y){
+              c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+              t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+              y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+            })(window, document, "clarity", "script", "u5truj94zn");
           `}
         </Script>
       </body>

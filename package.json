@@ -10,6 +10,7 @@
     "export": "next export"
   },
   "dependencies": {
+    "@cashfreepayments/cashfree-js": "^1.0.5",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "1.2.2",
     "@radix-ui/react-alert-dialog": "1.1.4",
@@ -40,8 +41,6 @@
     "@radix-ui/react-tooltip": "1.1.6",
     "@react-oauth/google": "^0.12.2",
     "@react-pdf/renderer": "^4.3.1",
-    "@stripe/react-stripe-js": "^5.3.0",
-    "@stripe/stripe-js": "^8.3.0",
     "@types/js-cookie": "^3.0.6",
     "@vercel/analytics": "latest",
     "@wix/crm": "^1.0.1045",

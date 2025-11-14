@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCart } from "@/hooks/use-cart";
 import { useUser } from "@/context/user-context";
 import { toast } from "sonner";
-import PaymentForm from "@/components/checkout/PaymentForm";
+import CashfreePaymentForm from "@/components/checkout/CashfreePaymentForm";
 
 type CheckoutStep = "contact" | "delivery" | "payment";
 
@@ -80,7 +80,7 @@ export default function HeadlessCheckoutPage() {
     notes: "",
   });
   const [selectedShipping, setSelectedShipping] = useState<string>("");
-  const [paymentMethod, setPaymentMethod] = useState<string>("cod");
+  const [paymentMethod, setPaymentMethod] = useState<string>("cashfree");
   const [termsAccepted, setTermsAccepted] = useState<boolean>(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [couponCode, setCouponCode] = useState<string>("");
@@ -444,9 +444,9 @@ export default function HeadlessCheckoutPage() {
       return;
     }
 
-    // For online payments, the order is placed automatically after payment success
+    // For cashfree payments, the order is placed automatically after payment success
     // This form submission is only for COD
-    if (paymentMethod === "online") {
+    if (paymentMethod === "cashfree") {
       if (!paymentData) {
         toast.error("Please complete the payment process above");
         return;
@@ -467,16 +467,11 @@ export default function HeadlessCheckoutPage() {
         paymentMethod,
       };
 
-      // Add payment data for online payments
-      if (paymentMethod === "online" && paymentData) {
+      // Add payment data for cashfree payments
+      if (paymentMethod === "cashfree" && paymentData) {
         orderPayload.paymentProvider = paymentData.provider;
-        if (paymentData.provider === "stripe") {
-          orderPayload.paymentIntentId = paymentData.paymentIntentId;
-        } else if (paymentData.provider === "razorpay") {
-          orderPayload.razorpayOrderId = paymentData.razorpayOrderId;
-          orderPayload.razorpayPaymentId = paymentData.razorpayPaymentId;
-          orderPayload.razorpaySignature = paymentData.razorpaySignature;
-        }
+        // Cashfree payment data is handled via webhook
+        // No additional data needed in payload
       }
 
       const res = await fetch("/api/checkout/place-order", {
@@ -527,13 +522,8 @@ export default function HeadlessCheckoutPage() {
         paymentProvider: data.provider,
       };
 
-      if (data.provider === "stripe") {
-        orderPayload.paymentIntentId = data.paymentIntentId;
-      } else if (data.provider === "razorpay") {
-        orderPayload.razorpayOrderId = data.razorpayOrderId;
-        orderPayload.razorpayPaymentId = data.razorpayPaymentId;
-        orderPayload.razorpaySignature = data.razorpaySignature;
-      }
+      // Cashfree payment data is handled differently
+      // The payment success page will handle order placement
 
       const res = await fetch("/api/checkout/place-order", {
         method: "POST",
@@ -819,7 +809,7 @@ export default function HeadlessCheckoutPage() {
 
                 <label
                   className={`flex items-center gap-3 border rounded-xl px-4 py-3 cursor-pointer transition-all ${
-                    paymentMethod === "online"
+                    paymentMethod === "cashfree"
                       ? "border-[#DD9627] bg-[#FFF8E1]"
                       : "border-[#E5E0D8] hover:border-[#DD9627]/60"
                   }`}
@@ -827,9 +817,9 @@ export default function HeadlessCheckoutPage() {
                   <input
                     type="radio"
                     name="payment-method"
-                    value="online"
-                    checked={paymentMethod === "online"}
-                    onChange={() => setPaymentMethod("online")}
+                    value="cashfree"
+                    checked={paymentMethod === "cashfree"}
+                    onChange={() => setPaymentMethod("cashfree")}
                   />
                   <div>
                     <p className="text-[#3B2B13] font-medium">Online payment</p>
@@ -838,15 +828,17 @@ export default function HeadlessCheckoutPage() {
                 </label>
               </div>
 
-              {/* Payment Form - Show when online payment is selected */}
-              {paymentMethod === "online" && checkoutId && (
+              {/* Payment Form - Show when cashfree payment is selected */}
+              {paymentMethod === "cashfree" && checkoutId && (
                 <div className="mt-6 pt-6 border-t border-[#E5E0D8]">
-                  <PaymentForm
+                  <CashfreePaymentForm
                     checkoutId={checkoutId}
                     total={total}
                     currency="INR"
                     onPaymentSuccess={handlePaymentSuccess}
                     onPaymentError={handlePaymentError}
+                    customerEmail={contactState.email}
+                    customerPhone={contactState.phone}
                   />
                 </div>
               )}
@@ -898,12 +890,12 @@ export default function HeadlessCheckoutPage() {
               </Button>
               <Button
                 type="submit"
-                disabled={isPlacingOrder || (paymentMethod === "online" && !paymentData)}
+                disabled={isPlacingOrder || (paymentMethod === "cashfree" && !paymentData)}
                 className="bg-gradient-to-r from-[#DD9627] via-[#FED649] to-[#B47B2B] text-black font-semibold px-8"
               >
-                {isPlacingOrder 
-                  ? "Placing order..." 
-                  : paymentMethod === "online" && !paymentData
+                {isPlacingOrder
+                  ? "Placing order..."
+                  : paymentMethod === "cashfree" && !paymentData
                     ? "Complete payment above"
                     : "Place order"}
               </Button>

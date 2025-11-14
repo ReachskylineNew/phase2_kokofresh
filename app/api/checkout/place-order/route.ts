@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getWixServerClient } from "@/lib/wix-server-client";
 
-/**
- * Place order from checkout
- * Supports both online payment (with payment intent) and COD
- */
+interface RequestBody {
+  checkoutId: string;
+  paymentMethod: "cod" | "cashfree";
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { checkoutId, paymentMethod, paymentIntentId, paymentToken } = body;
+    const body: RequestBody = await req.json();
+
+    const { checkoutId, paymentMethod } = body;
 
     if (!checkoutId) {
       return NextResponse.json(
@@ -19,127 +21,76 @@ export async function POST(req: NextRequest) {
 
     const wixClient = await getWixServerClient();
 
-    // Build payment info based on method
-    const paymentInfo: any = {};
+    let paymentInfo: any = {};
 
+    // -----------------------------
+    // COD Case
+    // -----------------------------
     if (paymentMethod === "cod") {
-      // Cash on Delivery - no payment processing needed
-      paymentInfo.paymentProvider = "manual";
-      paymentInfo.paymentMethod = "manual";
-    } else if (paymentMethod === "online") {
-      // Online payment - requires payment provider and credentials
-      const { paymentProvider, paymentIntentId, paymentToken, razorpayOrderId, razorpayPaymentId, razorpaySignature } = body;
+      paymentInfo = {
+        paymentProvider: "MANUAL",
+        paymentMethod: "manual",
+      };
+    }
 
-      if (!paymentProvider) {
-        return NextResponse.json(
-          { error: "Payment provider is required for online payments" },
-          { status: 400 }
-        );
-      }
+    // -----------------------------
+    // Cashfree Case
+    // -----------------------------
+    else if (paymentMethod === "cashfree") {
+      // Fetch checkout info to get final amount
+      const checkout = await wixClient.checkout.getCheckout(checkoutId);
+      const amount = checkout.totals?.grandTotal?.amount;
 
-      if (paymentProvider === "stripe") {
-        if (!paymentIntentId) {
-          return NextResponse.json(
-            { error: "Stripe payment intent ID is required" },
-            { status: 400 }
-          );
-        }
-        // Verify payment intent was successful
-        const Stripe = require("stripe");
-        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
-        
-        try {
-          const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
-          if (intent.status !== "succeeded") {
-            return NextResponse.json(
-              { error: `Payment not completed. Status: ${intent.status}` },
-              { status: 400 }
-            );
-          }
-        } catch (stripeError: any) {
-          console.error("Stripe verification error:", stripeError);
-          return NextResponse.json(
-            { error: "Failed to verify payment. Please try again." },
-            { status: 500 }
-          );
-        }
+      paymentInfo = {
+        paymentProvider: "CASHFREE",
+        paymentMethod: "cashfree",
+        paymentDetails: {
+          externalTransactionId: "cashfree-" + checkoutId,
+          amount,
+          currency: "INR",
+        },
+      };
+    }
 
-        paymentInfo.paymentProvider = "external";
-        paymentInfo.paymentMethod = "stripe";
-        paymentInfo.paymentIntentId = paymentIntentId;
-      } else if (paymentProvider === "razorpay") {
-        if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
-          return NextResponse.json(
-            { error: "Razorpay order ID, payment ID, and signature are required" },
-            { status: 400 }
-          );
-        }
-
-        // Verify Razorpay signature
-        const crypto = require("crypto");
-        const Razorpay = require("razorpay");
-        const razorpay = new Razorpay({
-          key_id: process.env.RAZORPAY_KEY_ID,
-          key_secret: process.env.RAZORPAY_KEY_SECRET,
-        });
-
-        const text = `${razorpayOrderId}|${razorpayPaymentId}`;
-        const generatedSignature = crypto
-          .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET || "")
-          .update(text)
-          .digest("hex");
-
-        if (generatedSignature !== razorpaySignature) {
-          return NextResponse.json(
-            { error: "Invalid Razorpay payment signature" },
-            { status: 400 }
-          );
-        }
-
-        paymentInfo.paymentProvider = "external";
-        paymentInfo.paymentMethod = "razorpay";
-        paymentInfo.razorpayOrderId = razorpayOrderId;
-        paymentInfo.razorpayPaymentId = razorpayPaymentId;
-      } else {
-        return NextResponse.json(
-          { error: `Unsupported payment provider: ${paymentProvider}` },
-          { status: 400 }
-        );
-      }
-    } else {
+    // -----------------------------
+    // Invalid Payment Method
+    // -----------------------------
+    else {
       return NextResponse.json(
-        { error: "Invalid payment method. Use 'cod' or 'online'" },
+        { error: "Invalid paymentMethod. Use 'cod' or 'cashfree'" },
         { status: 400 }
       );
     }
 
-    // Place the order
-    const order = await wixClient.checkout.placeOrder(checkoutId, {
-      paymentInfo,
-    });
+    console.log("Sending paymentInfo to Wix:", paymentInfo);
 
-    if (!order?._id) {
+    // -----------------------------
+    // CREATE ORDER IN WIX
+    // -----------------------------
+    const order = await wixClient.checkout.createOrder(checkoutId, paymentInfo);
+
+    if (!order?.order?._id) {
       return NextResponse.json(
-        { error: "Failed to place order" },
+        { error: "Wix failed to create order" },
         { status: 500 }
       );
     }
 
     return NextResponse.json({
-      orderId: order._id,
-      orderNumber: order.number,
-      order,
       success: true,
+      orderId: order.order._id,
+      orderNumber: order.order.number,
+      order: order.order,
     });
-  } catch (error: any) {
-    console.error("❌ Place order error:", error);
+
+  } catch (err: any) {
+    console.error("❌ ORDER ERROR:", err);
+
     return NextResponse.json(
       {
-        error: error.message || "Failed to place order",
-        details: process.env.NODE_ENV === "development" ? error.stack : undefined,
+        error: err.message || "Internal error",
       },
       { status: 500 }
     );
   }
 }
-

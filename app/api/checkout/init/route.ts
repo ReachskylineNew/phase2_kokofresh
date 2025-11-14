@@ -36,52 +36,15 @@ export async function POST(req: NextRequest) {
       console.log("🛒 Calculated subtotal from line items:", fallbackSubtotal);
     }
 
-    // Calculate totals (this includes taxes, shipping, discounts)
-    let calculatedTotals: any = {};
-    try {
-      const totalsResult = await wixClient.checkout.calculateTotals(checkoutId);
-      console.log("💰 Calculated totals result:", JSON.stringify(totalsResult, null, 2));
-      
-      // Handle different possible response structures
-      if (totalsResult.totals) {
-        calculatedTotals = {
-          subtotal: totalsResult.totals.subtotal?.amount || totalsResult.totals.subtotal?.value || fallbackSubtotal,
-          tax: totalsResult.totals.tax?.amount || totalsResult.totals.tax?.value || "0",
-          shipping: totalsResult.totals.shipping?.amount || totalsResult.totals.shipping?.value || "0",
-          discount: totalsResult.totals.discount?.amount || totalsResult.totals.discount?.value || "0",
-          total: totalsResult.totals.total?.amount || totalsResult.totals.total?.value || fallbackSubtotal,
-        };
-      } else if (totalsResult.subtotal) {
-        // Direct totals object
-        calculatedTotals = {
-          subtotal: totalsResult.subtotal?.amount || totalsResult.subtotal?.value || totalsResult.subtotal || fallbackSubtotal,
-          tax: totalsResult.tax?.amount || totalsResult.tax?.value || totalsResult.tax || "0",
-          shipping: totalsResult.shipping?.amount || totalsResult.shipping?.value || totalsResult.shipping || "0",
-          discount: totalsResult.discount?.amount || totalsResult.discount?.value || totalsResult.discount || "0",
-          total: totalsResult.total?.amount || totalsResult.total?.value || totalsResult.total || fallbackSubtotal,
-        };
-      } else {
-        // Fallback to checkout totals
-        calculatedTotals = {
-          subtotal: checkout.totals?.subtotal?.amount || checkout.totals?.subtotal?.value || fallbackSubtotal,
-          tax: checkout.totals?.tax?.amount || checkout.totals?.tax?.value || "0",
-          shipping: checkout.totals?.shipping?.amount || checkout.totals?.shipping?.value || "0",
-          discount: checkout.totals?.discount?.amount || checkout.totals?.discount?.value || "0",
-          total: checkout.totals?.total?.amount || checkout.totals?.total?.value || fallbackSubtotal,
-        };
-      }
-    } catch (calcError: any) {
-      console.warn("⚠️ Failed to calculate totals:", calcError?.message);
-      console.warn("⚠️ Error details:", calcError);
-      // Fallback to basic totals from checkout or line items
-      calculatedTotals = {
-        subtotal: checkout.totals?.subtotal?.amount || checkout.totals?.subtotal?.value || fallbackSubtotal,
-        tax: checkout.totals?.tax?.amount || checkout.totals?.tax?.value || "0",
-        shipping: checkout.totals?.shipping?.amount || checkout.totals?.shipping?.value || "0",
-        discount: checkout.totals?.discount?.amount || checkout.totals?.discount?.value || "0",
-        total: checkout.totals?.total?.amount || checkout.totals?.total?.value || fallbackSubtotal,
-      };
-    }
+    // Get totals from checkout object (Wix SDK doesn't have calculateTotals method)
+    // The checkout object uses priceSummary for totals
+    let calculatedTotals: any = {
+      subtotal: checkout.priceSummary?.subtotal?.amount || checkout.priceSummary?.subtotal?.value || fallbackSubtotal,
+      tax: checkout.priceSummary?.tax?.amount || checkout.priceSummary?.tax?.value || "0",
+      shipping: checkout.priceSummary?.shipping?.amount || checkout.priceSummary?.shipping?.value || "0",
+      discount: checkout.priceSummary?.discount?.amount || checkout.priceSummary?.discount?.value || "0",
+      total: checkout.priceSummary?.total?.amount || checkout.priceSummary?.total?.value || fallbackSubtotal,
+    };
 
     // If totals are still 0, use line items calculation
     if (calculatedTotals.subtotal === "0" || parseFloat(calculatedTotals.subtotal) === 0) {
@@ -94,20 +57,28 @@ export async function POST(req: NextRequest) {
 
     console.log("✅ Final calculated totals:", calculatedTotals);
 
-    // Get available shipping options
+    // Get available shipping options from checkout
+    // Wix SDK doesn't have getAvailableShippingMethods, so we use checkout shipping info
     let shippingOptions: any[] = [];
-    try {
-      const shippingMethods = await wixClient.checkout.getAvailableShippingMethods(checkoutId);
-      shippingOptions = shippingMethods.shippingMethods || [];
-    } catch (shippingError: any) {
-      console.warn("⚠️ Failed to fetch shipping methods:", shippingError?.message);
-      // Fallback to default options
+    
+    // Try to get shipping methods from checkout object
+    if (checkout.shippingInfo?.logistics?.availableShippingMethods) {
+      shippingOptions = checkout.shippingInfo.logistics.availableShippingMethods.map((method: any) => ({
+        id: method.id || method._id,
+        title: method.title || method.name || "Standard Shipping",
+        description: method.description || method.deliveryTime || "",
+        cost: method.cost?.amount || "0",
+        formattedCost: method.cost?.formattedAmount || "Free",
+      }));
+    } else {
+      // Fallback to default options if not available
       shippingOptions = [
         {
           id: "standard",
           title: "Standard Delivery",
           description: "3-5 business days",
-          cost: { amount: "0", formattedAmount: "Free" },
+          cost: "0",
+          formattedCost: "Free",
         },
       ];
     }

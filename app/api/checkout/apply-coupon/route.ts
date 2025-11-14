@@ -26,38 +26,15 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Recalculate totals after applying coupon
-      let calculatedTotals: any = {};
-      try {
-        const totalsResult = await wixClient.checkout.calculateTotals(checkoutId);
-        
-        if (totalsResult.totals) {
-          calculatedTotals = {
-            subtotal: totalsResult.totals.subtotal?.amount || "0",
-            tax: totalsResult.totals.tax?.amount || "0",
-            shipping: totalsResult.totals.shipping?.amount || "0",
-            discount: totalsResult.totals.discount?.amount || "0",
-            total: totalsResult.totals.total?.amount || "0",
-          };
-        } else {
-          calculatedTotals = {
-            subtotal: updatedCheckout.totals?.subtotal?.amount || "0",
-            tax: updatedCheckout.totals?.tax?.amount || "0",
-            shipping: updatedCheckout.totals?.shipping?.amount || "0",
-            discount: updatedCheckout.totals?.discount?.amount || "0",
-            total: updatedCheckout.totals?.total?.amount || "0",
-          };
-        }
-      } catch (calcError: any) {
-        console.warn("⚠️ Failed to recalculate totals:", calcError?.message);
-        calculatedTotals = {
-          subtotal: updatedCheckout.totals?.subtotal?.amount || "0",
-          tax: updatedCheckout.totals?.tax?.amount || "0",
-          shipping: updatedCheckout.totals?.shipping?.amount || "0",
-          discount: updatedCheckout.totals?.discount?.amount || "0",
-          total: updatedCheckout.totals?.total?.amount || "0",
-        };
-      }
+      // Get totals from updated checkout object (Wix SDK doesn't have calculateTotals method)
+      // The checkout object uses priceSummary for totals
+      const calculatedTotals = {
+        subtotal: updatedCheckout.priceSummary?.subtotal?.amount || updatedCheckout.priceSummary?.subtotal?.value || "0",
+        tax: updatedCheckout.priceSummary?.tax?.amount || updatedCheckout.priceSummary?.tax?.value || "0",
+        shipping: updatedCheckout.priceSummary?.shipping?.amount || updatedCheckout.priceSummary?.shipping?.value || "0",
+        discount: updatedCheckout.priceSummary?.discount?.amount || updatedCheckout.priceSummary?.discount?.value || "0",
+        total: updatedCheckout.priceSummary?.total?.amount || updatedCheckout.priceSummary?.total?.value || "0",
+      };
 
       const formatTotal = (value: any): string => {
         if (value === null || value === undefined) return "0";
