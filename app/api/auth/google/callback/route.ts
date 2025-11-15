@@ -121,6 +121,14 @@ export async function GET(req: NextRequest) {
         statusText: syncResponse.statusText,
         error: errorData,
       });
+
+      // Special handling for existing account that cannot be linked
+      if (syncResponse.status === 400 && errorData.existing === true) {
+        return NextResponse.redirect(
+          `${req.nextUrl.origin}/login?accountExists=true&email=${encodeURIComponent(userInfo.email)}`
+        );
+      }
+
       return NextResponse.redirect(
         `${req.nextUrl.origin}/login?error=${encodeURIComponent(errorData.message || "wix_sync_failed")}`
       );

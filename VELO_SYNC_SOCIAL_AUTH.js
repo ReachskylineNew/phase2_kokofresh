@@ -75,11 +75,12 @@ export async function post_syncSocialAuth(request) {
     // Check if member already exists by email
     let existingMember = null
     try {
-      // Query members by email
-      const membersQuery = await query("Members")
+      // Query members by email using correct collection
+      const membersQuery = await query("Members/PrivateMembersData")
         .eq("loginEmail", email)
+        .limit(1)
         .find()
-      
+
       if (membersQuery.items && membersQuery.items.length > 0) {
         existingMember = membersQuery.items[0]
         console.log("✅ Found existing member:", existingMember._id)

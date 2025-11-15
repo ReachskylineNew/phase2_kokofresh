@@ -18,6 +18,8 @@ import { members } from "@wix/members";
 export default function LoginPage() {
   const [authMethod, setAuthMethod] = useState<"email" | "phone">("email")
   const [step, setStep] = useState<"form" | "otp">("form")
+  const [accountExists, setAccountExists] = useState(false)
+  const [existingEmail, setExistingEmail] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -37,6 +39,22 @@ export default function LoginPage() {
       clientId: process.env.NEXT_PUBLIC_WIX_CLIENT_ID || "2656201f-a899-4ec4-8b24-d1132bcf5405",
     }),
   });
+
+  // Check for accountExists query parameter
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const accountExistsParam = urlParams.get("accountExists")
+    const emailParam = urlParams.get("email")
+
+    if (accountExistsParam === "true" && emailParam) {
+      setAccountExists(true)
+      setExistingEmail(emailParam)
+      setFormData(prev => ({ ...prev, email: emailParam }))
+      setAuthMethod("email")
+      // Clear the URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
+  }, [])
 //   useEffect(() => {
 //     const accessToken = Cookies.get("accessToken")
 //     setIsLoggedIn(!!accessToken)
@@ -106,6 +124,7 @@ async function getAndSetMemberTokens(sessionToken:any) {
           refreshToken: {
             value: wixLoginData.refreshToken.value || wixLoginData.refreshToken,
             expiresAt: wixLoginData.refreshToken.expiresAt || (Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60)),
+            role: "user" as any,
           },
         };
         
@@ -232,7 +251,7 @@ async function getAndSetMemberTokens(sessionToken:any) {
       Cookies.remove("refreshToken")
       
       // Clear tokens from client
-      myWixClient.auth.setTokens(undefined)
+      myWixClient.auth.setTokens(null as any)
       
       window.dispatchEvent(new Event("authChanged"))
       
@@ -302,11 +321,37 @@ async function getAndSetMemberTokens(sessionToken:any) {
               <p className="text-[#6B4A0F] text-sm">
                 {isLoggedIn
                   ? "You are logged in"
-                  : step === "form"
-                    ? "Login to your KokoFresh account"
-                    : "Verify your identity"}
+                  : accountExists
+                    ? "This email is already registered. Please sign in with your password."
+                    : step === "form"
+                      ? "Login to your KokoFresh account"
+                      : "Verify your identity"}
               </p>
             </div>
+
+            {/* Account Exists Alert */}
+            {accountExists && (
+              <div className="mb-6 bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-yellow-800">
+                      Account Already Exists
+                    </h3>
+                    <div className="mt-2 text-sm text-yellow-700">
+                      <p>
+                        An account with <strong>{existingEmail}</strong> already exists.
+                        Please enter your password to sign in.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {isLoggedIn ? (
               <div className="space-y-4">
