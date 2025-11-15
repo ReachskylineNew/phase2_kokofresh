@@ -34,8 +34,8 @@ export async function POST(req: NextRequest) {
         customer_phone: cleanPhone,
       },
       order_meta: {
-        return_url: `${process.env.NEXT_PUBLIC_URL?.replace(/\/$/, '')}/payment-success?checkoutId=${checkoutId}`,
-        notify_url: `${process.env.NEXT_PUBLIC_URL?.replace(/\/$/, '')}/api/cashfree/webhook`,
+        return_url: `https://phase2-kokofresh-chi.vercel.app/payment-success?checkoutId=${checkoutId}`,
+        notify_url: `https://phase2-kokofresh-chi.vercel.app/api/cashfree/webhook`,
       },
     };
 
