@@ -31,66 +31,84 @@ export async function POST(req: NextRequest) {
       };
     }
 
+    const ensureShippingInfo = () => {
+      if (!updatePayload.shippingInfo) {
+        updatePayload.shippingInfo = {};
+      }
+      const shippingInfoPayload = updatePayload.shippingInfo as any;
+      if (!shippingInfoPayload.logistics) {
+        shippingInfoPayload.logistics = {};
+      }
+      return shippingInfoPayload;
+    };
+
+    const normalizeMoney = (value: any, fallbackCurrency = "INR") => {
+      if (!value) return { amount: "0", currency: fallbackCurrency };
+      if (typeof value === "number") {
+        return { amount: value.toString(), currency: fallbackCurrency };
+      }
+      if (typeof value === "string") {
+        return { amount: value, currency: fallbackCurrency };
+      }
+      return {
+        amount: (value.amount ?? value.value ?? 0).toString(),
+        currency: value.currency || fallbackCurrency,
+      };
+    };
+
     // Add shipping address if provided
     if (shippingAddress) {
-      updatePayload.shippingInfo = {
-        logistics: {
-          shippingDestination: {
-            address: {
-              addressLine1: shippingAddress.line1,
-              addressLine2: shippingAddress.line2 || "",
-              city: shippingAddress.city,
-              subdivision: shippingAddress.region,
-              postalCode: shippingAddress.postalCode,
-              country: shippingAddress.country || "IN",
-            },
-            contactDetails: {
-              ...(buyerInfo?.firstName && { firstName: buyerInfo.firstName }),
-              ...(buyerInfo?.lastName && { lastName: buyerInfo.lastName }),
-              ...(buyerInfo?.phone && { phone: buyerInfo.phone }),
-            },
-          },
+      const shippingInfoPayload = ensureShippingInfo();
+      shippingInfoPayload.logistics.shippingDestination = {
+        address: {
+          addressLine1: shippingAddress.line1,
+          addressLine2: shippingAddress.line2 || "",
+          city: shippingAddress.city,
+          subdivision: shippingAddress.region,
+          postalCode: shippingAddress.postalCode,
+          country: shippingAddress.country || "IN",
+        },
+        contactDetails: {
+          ...(buyerInfo?.firstName && { firstName: buyerInfo.firstName }),
+          ...(buyerInfo?.lastName && { lastName: buyerInfo.lastName }),
+          ...(buyerInfo?.phone && { phone: buyerInfo.phone }),
+          ...(buyerInfo?.email && { email: buyerInfo.email }),
         },
       };
     }
 
     // Update shipping method / selected carrier service option if provided
     if (shippingOptionId) {
-      // Always ensure shippingInfo + logistics objects exist so we can safely extend them
-      if (!updatePayload.shippingInfo) {
-        updatePayload.shippingInfo = {};
-      }
-      if (!updatePayload.shippingInfo.logistics) {
-        updatePayload.shippingInfo.logistics = {};
-      }
+      const shippingInfoPayload = ensureShippingInfo();
 
-      // Fetch current checkout so we can find the matching carrierServiceOption
       const checkout = await wixClient.checkout.getCheckout(checkoutId);
-      const availableMethods =
-        checkout.shippingInfo?.logistics?.availableShippingMethods || [];
+      const logistics = (checkout.shippingInfo as any)?.logistics || {};
+      const availableMethods = logistics.availableShippingMethods || [];
 
-      // A shippingOptionId might refer either to the method id or the carrierServiceOption id.
-      // 1) Try to match by carrierServiceOption id
       let selectedCarrierServiceOption: any | null = null;
+      let selectedMethod: any | null = null;
+
       for (const method of availableMethods) {
         const options = method?.carrierServiceOptions || [];
-        const matchByOption = options.find(
-          (opt: any) => opt?.id === shippingOptionId
+        const optionMatch = options.find(
+          (opt: any) => opt?.id === shippingOptionId || opt?._id === shippingOptionId
         );
-        if (matchByOption) {
-          selectedCarrierServiceOption = matchByOption;
+        if (optionMatch) {
+          selectedCarrierServiceOption = optionMatch;
+          selectedMethod = method;
+          break;
+        }
+        if (method?.id === shippingOptionId || method?._id === shippingOptionId) {
+          selectedMethod = method;
+          if (options.length) {
+            selectedCarrierServiceOption = options[0];
+          }
           break;
         }
       }
 
-      // 2) If not found, try to match by method id and pick its first carrierServiceOption
-      if (!selectedCarrierServiceOption) {
-        const methodMatch = availableMethods.find(
-          (m: any) => m?.id === shippingOptionId || m?._id === shippingOptionId
-        );
-        if (methodMatch?.carrierServiceOptions?.length) {
-          selectedCarrierServiceOption = methodMatch.carrierServiceOptions[0];
-        }
+      if (!selectedCarrierServiceOption && selectedMethod?.carrierServiceOptions?.length) {
+        selectedCarrierServiceOption = selectedMethod.carrierServiceOptions[0];
       }
 
       if (!selectedCarrierServiceOption) {
@@ -99,8 +117,41 @@ export async function POST(req: NextRequest) {
           shippingOptionId
         );
       } else {
-        updatePayload.shippingInfo.logistics.selectedCarrierServiceOption =
+        shippingInfoPayload.logistics.selectedCarrierServiceOption =
           selectedCarrierServiceOption;
+
+        const selectedCost =
+          selectedCarrierServiceOption.cost ||
+          selectedMethod?.cost ||
+          (checkout.shippingInfo as any)?.cost ||
+          {};
+        const selectedCostAny: any = selectedCost || {};
+
+        shippingInfoPayload.cost = {
+          price: normalizeMoney(selectedCostAny.price || selectedCostAny),
+          totalPriceBeforeTax: normalizeMoney(
+            selectedCostAny.totalPriceBeforeTax || selectedCostAny
+          ),
+          totalPriceAfterTax: normalizeMoney(
+            selectedCostAny.totalPriceAfterTax || selectedCostAny
+          ),
+          totalDiscount: normalizeMoney(selectedCostAny.totalDiscount),
+          taxDetails: {
+            totalTax: normalizeMoney(
+              selectedCostAny.taxDetails?.totalTax,
+              selectedCostAny.price?.currency || "INR"
+            ),
+          },
+        };
+
+        shippingInfoPayload.region = {
+          _id:
+            (checkout.shippingInfo as any)?.region?._id ||
+            "region-" + (shippingAddress?.country || "IN").toLowerCase(),
+          name:
+            (checkout.shippingInfo as any)?.region?.name ||
+            (shippingAddress?.country || "India"),
+        };
       }
     }
 
@@ -112,12 +163,19 @@ export async function POST(req: NextRequest) {
 
     // Get totals from updated checkout object (Wix SDK doesn't have calculateTotals method)
     // The checkout object uses priceSummary for totals
+    const priceSummary: any = updatedCheckout.priceSummary || {};
+    const readMoney = (money: any) => {
+      if (!money) return "0";
+      if (typeof money === "number" || typeof money === "string") return money.toString();
+      return (money.amount ?? money.value ?? 0).toString();
+    };
+
     const calculatedTotals = {
-      subtotal: updatedCheckout.priceSummary?.subtotal?.amount || updatedCheckout.priceSummary?.subtotal?.value || "0",
-      tax: updatedCheckout.priceSummary?.tax?.amount || updatedCheckout.priceSummary?.tax?.value || "0",
-      shipping: updatedCheckout.priceSummary?.shipping?.amount || updatedCheckout.priceSummary?.shipping?.value || "0",
-      discount: updatedCheckout.priceSummary?.discount?.amount || updatedCheckout.priceSummary?.discount?.value || "0",
-      total: updatedCheckout.priceSummary?.total?.amount || updatedCheckout.priceSummary?.total?.value || "0",
+      subtotal: readMoney(priceSummary.subtotal),
+      tax: readMoney(priceSummary.tax),
+      shipping: readMoney(priceSummary.shipping),
+      discount: readMoney(priceSummary.discount),
+      total: readMoney(priceSummary.total),
     };
 
     // Ensure all totals are strings
