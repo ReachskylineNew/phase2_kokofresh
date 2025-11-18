@@ -34,6 +34,7 @@ type AddressFormState = {
 
 type ShippingOption = {
   id: string;
+  methodId?: string;
   title: string;
   description: string;
   cost: string;
@@ -157,12 +158,16 @@ export default function HeadlessCheckoutPage() {
           });
         }
         
-        setShippingOptions(data.shippingOptions || []);
+        const receivedShippingOptions = data.shippingOptions || [];
+        setShippingOptions(receivedShippingOptions);
 
-        // Select first shipping option by default
-        if (data.shippingOptions?.length > 0 && !selectedShipping) {
-          setSelectedShipping(data.shippingOptions[0].id);
-        }
+        const initialSelectedShipping =
+          data.selectedShippingOptionId ||
+          (receivedShippingOptions.length > 0
+            ? receivedShippingOptions[0].id
+            : "");
+
+        setSelectedShipping(initialSelectedShipping);
       } catch (error: any) {
         console.error("Failed to initialize checkout:", error);
         toast.error(error.message || "Failed to initialize checkout");
@@ -304,6 +309,17 @@ export default function HeadlessCheckoutPage() {
 
       const data = await res.json();
       setTotals(data.totals);
+      if (Array.isArray(data.shippingOptions)) {
+        setShippingOptions(data.shippingOptions);
+      }
+
+      if (data.selectedShippingOptionId) {
+        setSelectedShipping(data.selectedShippingOptionId);
+      } else if (shippingOptionId) {
+        setSelectedShipping(shippingOptionId);
+      } else if (data.shippingOptions?.length) {
+        setSelectedShipping(data.shippingOptions[0].id);
+      }
       return data;
     } catch (error: any) {
       console.error("Failed to update checkout:", error);
@@ -351,6 +367,11 @@ export default function HeadlessCheckoutPage() {
 
     if (!isIndia) {
       toast.error("We currently ship only within India.");
+      return;
+    }
+
+    if (!selectedShipping) {
+      toast.error("Please select a shipping method");
       return;
     }
 

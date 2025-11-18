@@ -1,6 +1,97 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getWixServerClient } from "@/lib/wix-server-client";
 
+const buildShippingOptions = (checkout: any) => {
+  const logistics = checkout?.shippingInfo?.logistics;
+  const availableMethods = logistics?.availableShippingMethods || [];
+  const options: Array<{
+    id: string;
+    methodId?: string;
+    title: string;
+    description: string;
+    cost: string;
+    formattedCost: string;
+  }> = [];
+
+  availableMethods.forEach((method: any) => {
+    const methodId = method?.id || method?._id;
+    const baseTitle = method?.title || method?.name || "Standard Shipping";
+    const baseDescription =
+      method?.description || method?.deliveryTime || "Standard delivery";
+    const baseCost =
+      method?.cost?.price ||
+      method?.cost ||
+      { amount: "0", formattedAmount: "Free" };
+
+    const pushOption = (option: any, fallbackTitle?: string) => {
+      const optionId = option?.id || option?._id || methodId;
+      if (!optionId) return;
+
+      const optionTitle =
+        option?.title || option?.name || fallbackTitle || baseTitle;
+      const optionDescription =
+        option?.description ||
+        option?.deliveryTime ||
+        baseDescription ||
+        "";
+
+      const optionCost =
+        option?.cost?.price ||
+        option?.cost ||
+        baseCost ||
+        { amount: "0", formattedAmount: "Free" };
+
+      const costAmount =
+        optionCost?.amount ??
+        optionCost?.value ??
+        optionCost?.price?.amount ??
+        optionCost?.price?.value ??
+        "0";
+
+      const normalizedCost =
+        typeof costAmount === "number"
+          ? costAmount.toString()
+          : costAmount || "0";
+
+      const formattedCost =
+        optionCost?.formattedAmount ||
+        optionCost?.price?.formattedAmount ||
+        (Number.parseFloat(normalizedCost || "0") > 0
+          ? `₹${Number.parseFloat(normalizedCost).toFixed(2)}`
+          : "Free");
+
+      options.push({
+        id: optionId,
+        methodId,
+        title: optionTitle,
+        description: optionDescription,
+        cost: normalizedCost,
+        formattedCost,
+      });
+    };
+
+    if (Array.isArray(method?.carrierServiceOptions)) {
+      method.carrierServiceOptions.forEach((option: any) =>
+        pushOption(option, baseTitle)
+      );
+    } else {
+      pushOption(method, baseTitle);
+    }
+  });
+
+  if (!options.length) {
+    options.push({
+      id: "standard",
+      title: "Standard Delivery",
+      description: "3-5 business days",
+      cost: "0",
+      formattedCost: "Free",
+    });
+  }
+
+  return options;
+};
+
 /**
  * Initialize checkout from current cart
  * Returns checkout ID, calculated totals, shipping options, and tax breakdown
@@ -57,31 +148,7 @@ export async function POST(req: NextRequest) {
 
     console.log("✅ Final calculated totals:", calculatedTotals);
 
-    // Get available shipping options from checkout
-    // Wix SDK doesn't have getAvailableShippingMethods, so we use checkout shipping info
-    let shippingOptions: any[] = [];
-    
-    // Try to get shipping methods from checkout object
-    if (checkout.shippingInfo?.logistics?.availableShippingMethods) {
-      shippingOptions = checkout.shippingInfo.logistics.availableShippingMethods.map((method: any) => ({
-        id: method.id || method._id,
-        title: method.title || method.name || "Standard Shipping",
-        description: method.description || method.deliveryTime || "",
-        cost: method.cost?.amount || "0",
-        formattedCost: method.cost?.formattedAmount || "Free",
-      }));
-    } else {
-      // Fallback to default options if not available
-      shippingOptions = [
-        {
-          id: "standard",
-          title: "Standard Delivery",
-          description: "3-5 business days",
-          cost: "0",
-          formattedCost: "Free",
-        },
-      ];
-    }
+    const shippingOptions = buildShippingOptions(checkout);
 
     // Ensure all totals are strings (Wix returns amounts as strings)
     const formatTotal = (value: any): string => {
@@ -101,17 +168,17 @@ export async function POST(req: NextRequest) {
 
     console.log("📊 Final totals being returned:", finalTotals);
 
+    const selectedShippingOptionId =
+      (checkout.shippingInfo as any)?.logistics?.selectedCarrierServiceOption?._id ||
+      (checkout.shippingInfo as any)?.logistics?.selectedCarrierServiceOption?.id ||
+      "";
+
     return NextResponse.json({
       checkoutId,
       checkout,
       totals: finalTotals,
-      shippingOptions: shippingOptions.map((option) => ({
-        id: option.id || option._id,
-        title: option.title || option.name || "Standard Shipping",
-        description: option.description || option.deliveryTime || "",
-        cost: option.cost?.amount || "0",
-        formattedCost: option.cost?.formattedAmount || "Free",
-      })),
+      shippingOptions,
+      selectedShippingOptionId,
       lineItems: checkout.lineItems || [],
     });
   } catch (error: any) {

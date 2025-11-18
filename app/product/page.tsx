@@ -320,7 +320,7 @@ export default function ProductPage() {
           <>
             <title>{product.name} | Koko Fresh</title>
             <meta name="description" content={product.description?.replace(/<[^>]+>/g, "").slice(0, 150) || ""} />
-            <link rel="canonical" href={`https://www.kokofresh.in/product/${product.slug || product._id}`} />
+            <link rel="canonical" href={`https://www.chinmaybhatk.wixsite.com/flavorzapp/product/${product.slug || product._id}`} />
           </>
         )}
       </Head>

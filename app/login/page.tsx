@@ -122,7 +122,7 @@ async function getAndSetMemberTokens(sessionToken:any) {
       console.log("📩 Logging in with:", formData.email)
 
       // ✅ 2. Call your custom Wix login function (VELO backend)
-      const wixLoginRes = await fetch("https://kokofresh.in/_functions/loginUser", {
+      const wixLoginRes = await fetch("https://chinmaybhatk.wixsite.com/flavorzapp/_functions/loginUser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

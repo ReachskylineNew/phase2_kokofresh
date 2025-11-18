@@ -1,11 +1,11 @@
 ## Wix Session Bridge Setup
 
-The checkout flow now looks for a Wix-hosted "session bridge" before redirecting to the native checkout. The bridge must live on the Wix domain (e.g. `https://www.kokofresh.in`) so that `wixMembersFrontend.applySessionToken()` can set Wix cookies.
+The checkout flow now looks for a Wix-hosted "session bridge" before redirecting to the native checkout. The bridge must live on the Wix domain (e.g. `https://www.chinmaybhatk.wixsite.com/flavorzapp`) so that `wixMembersFrontend.applySessionToken()` can set Wix cookies.
 
 ### 1. Configure the bridge URL
 - Add `NEXT_PUBLIC_WIX_SESSION_BRIDGE_URL` to your environment (Vercel dashboard or `.env`) with the absolute URL of the Wix page that will run the bridge code, e.g.
   ```
-  NEXT_PUBLIC_WIX_SESSION_BRIDGE_URL=https://www.kokofresh.in/session-bridge
+  NEXT_PUBLIC_WIX_SESSION_BRIDGE_URL=https://www.chinmaybhatk.wixsite.com/flavorzapp/session-bridge
   ```
 - The value is read in `context/cart-context.tsx`. When present, checkout will redirect there with `checkoutId`, `checkoutUrl`, `sessionToken`, and `source` query params.
 

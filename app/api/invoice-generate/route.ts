@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       address1: "112, 5th Cross Road",
       address2: "Bengaluru, Karnataka, India",
       phone: "+91 7892776610",
-      email: "help@kokofresh.in",
+      email: "help@chinmaybhatk.wixsite.com/flavorzapp",
       gst: "29AALCC8084A1ZH",
       cin: "U56290KA2024PTC187789",
       fssai: "11224999000767",
@@ -190,7 +190,7 @@ export async function POST(req: NextRequest) {
     draw(`GSTN : ${company.gst}`, 50, y)
     draw(`CIN : ${company.cin}`, 50, y - 15)
     draw(`FSSAI License : ${company.fssai}`, 50, y - 30)
-    draw("Any Queries? - help@kokofresh.in", 50, y - 45)
+    draw("Any Queries? - help@chinmaybhatk.wixsite.com/flavorzapp", 50, y - 45)
 
     // ---- Save & Return ----
     const pdfBytes = await pdfDoc.save()

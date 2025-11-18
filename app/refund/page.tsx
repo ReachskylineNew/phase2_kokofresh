@@ -102,7 +102,7 @@ export default function RefundPolicyPage() {
                 <li className="flex items-start">
                   <span className="text-[#DD9627] font-bold mr-3">1.</span>
                   <span>
-                    <strong>Contact Support:</strong> Email help@kokofresh.in or call +91-9901360572 within 48 hours of
+                    <strong>Contact Support:</strong> Email help@chinmaybhatk.wixsite.com/flavorzapp or call +91-9901360572 within 48 hours of
                     receiving the order.
                   </span>
                 </li>
@@ -245,10 +245,10 @@ export default function RefundPolicyPage() {
               <div>
                 <p className="text-gray-600 mb-2">Email</p>
                 <a
-                  href="mailto:help@kokofresh.in"
+                  href="mailto:help@chinmaybhatk.wixsite.com/flavorzapp"
                   className="text-[#DD9627] font-semibold hover:text-[#B47B2B] transition-colors"
                 >
-                  help@kokofresh.in
+                  help@chinmaybhatk.wixsite.com/flavorzapp
                 </a>
               </div>
               <div>

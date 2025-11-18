@@ -179,7 +179,7 @@ export default function ContactPage() {
       title: "Email Us",
       description:
         "For detailed questions or business inquiries. We reply within 24 hours.",
-      action: "help@kokofresh.in",
+      action: "help@chinmaybhatk.wixsite.com/flavorzapp",
       highlight: "Most Detailed",
     },
     {
@@ -404,7 +404,7 @@ export default function ContactPage() {
         {
           question: "Do you supply for restaurants or bulk orders?",
           answer:
-            "Yes! We love partnering with chefs, cafes, and caterers. Just write to us at help@kokofresh.in for bulk orders or quotes.",
+            "Yes! We love partnering with chefs, cafes, and caterers. Just write to us at help@chinmaybhatk.wixsite.com/flavorzapp for bulk orders or quotes.",
         },
         {
           question: "Are your masalas free from artificial colours and preservatives?",
@@ -485,7 +485,7 @@ export default function ContactPage() {
             <div>
               <h3 className="font-bold text-lg mb-1 text-black">Email Addresses</h3>
               <p className="text-black/80 leading-relaxed">
-                General: help@kokofresh.in
+                General: help@chinmaybhatk.wixsite.com/flavorzapp
                 <br />
                 Business: business@kokofresh.com
                 <br />
