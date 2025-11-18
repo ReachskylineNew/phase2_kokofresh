@@ -58,6 +58,27 @@ export async function POST(req: NextRequest) {
 
     // Add shipping address if provided
     if (shippingAddress) {
+      const countryRaw = (shippingAddress.country || "").trim();
+      const countryUpper = countryRaw.toUpperCase();
+      const isIndia =
+        !countryUpper ||
+        countryUpper === "IN" ||
+        countryUpper === "IND" ||
+        countryUpper === "INDIA";
+
+      if (!isIndia) {
+        return NextResponse.json(
+          {
+            error:
+              "We currently ship only within India. Please enter an Indian shipping address.",
+          },
+          { status: 400 }
+        );
+      }
+
+      const countryCode = "IN";
+      const countryName = countryRaw || "India";
+
       const shippingInfoPayload = ensureShippingInfo();
       shippingInfoPayload.logistics.shippingDestination = {
         address: {
@@ -66,7 +87,7 @@ export async function POST(req: NextRequest) {
           city: shippingAddress.city,
           subdivision: shippingAddress.region,
           postalCode: shippingAddress.postalCode,
-          country: shippingAddress.country || "IN",
+          country: countryCode,
         },
         contactDetails: {
           ...(buyerInfo?.firstName && { firstName: buyerInfo.firstName }),
@@ -74,6 +95,15 @@ export async function POST(req: NextRequest) {
           ...(buyerInfo?.phone && { phone: buyerInfo.phone }),
           ...(buyerInfo?.email && { email: buyerInfo.email }),
         },
+      };
+
+      shippingInfoPayload.region = {
+        _id:
+          (shippingInfoPayload.region?._id as string | undefined) ||
+          "region-" + countryCode.toLowerCase(),
+        name:
+          (shippingInfoPayload.region?.name as string | undefined) ||
+          countryName,
       };
     }
 

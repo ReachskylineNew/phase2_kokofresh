@@ -341,6 +341,19 @@ export default function HeadlessCheckoutPage() {
       return;
     }
 
+    const countryValue = addressState.country?.trim() || "";
+    const countryUpper = countryValue.toUpperCase();
+    const isIndia =
+      countryUpper === "" ||
+      countryUpper === "INDIA" ||
+      countryUpper === "IND" ||
+      countryUpper === "IN";
+
+    if (!isIndia) {
+      toast.error("We currently ship only within India.");
+      return;
+    }
+
     try {
       await updateCheckout(
         {
@@ -349,7 +362,10 @@ export default function HeadlessCheckoutPage() {
           firstName: contactState.firstName,
           lastName: contactState.lastName,
         },
-        addressState,
+        {
+          ...addressState,
+          country: "India",
+        },
         selectedShipping
       );
       goToStep("payment");
