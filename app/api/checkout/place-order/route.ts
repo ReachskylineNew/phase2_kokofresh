@@ -21,6 +21,57 @@ export async function POST(req: NextRequest) {
 
     const wixClient = await getWixServerClient();
 
+    // Always fetch checkout so we can ensure shipping is valid and, for Cashfree,
+    // get the final payable amount.
+    let checkout = await wixClient.checkout.getCheckout(checkoutId);
+
+    // ------------------------------------------------------------------
+    // Ensure a selectedCarrierServiceOption exists on the checkout
+    // ------------------------------------------------------------------
+    try {
+      const logistics: any = (checkout as any).shippingInfo?.logistics;
+      const selected = logistics?.selectedCarrierServiceOption;
+
+      if (!selected) {
+        const available: any[] =
+          logistics?.availableShippingMethods || [];
+
+        let selectedCarrierServiceOption: any | null = null;
+
+        // Prefer the first available carrier service option
+        for (const method of available) {
+          const options = method?.carrierServiceOptions || [];
+          if (options.length > 0) {
+            selectedCarrierServiceOption = options[0];
+            break;
+          }
+        }
+
+        if (selectedCarrierServiceOption) {
+          await wixClient.checkout.updateCheckout(checkoutId, {
+            shippingInfo: {
+              logistics: {
+                selectedCarrierServiceOption,
+              },
+            } as any,
+          } as any);
+
+          // Refresh checkout after update
+          checkout = await wixClient.checkout.getCheckout(checkoutId);
+        } else {
+          console.warn(
+            "⚠️ No carrierServiceOptions available to auto-select for checkout",
+            checkoutId
+          );
+        }
+      }
+    } catch (shippingError) {
+      console.warn(
+        "⚠️ Failed to auto-select carrier service option:",
+        shippingError
+      );
+    }
+
     let paymentInfo: any = {};
 
     // -----------------------------
@@ -37,13 +88,14 @@ export async function POST(req: NextRequest) {
     // Cashfree Case
     // -----------------------------
     else if (paymentMethod === "cashfree") {
-      // Fetch checkout info to get final payable amount from priceSummary
-      const checkout = await wixClient.checkout.getCheckout(checkoutId);
+      // Use checkout info to get final payable amount from priceSummary
+      const priceSummary: any = (checkout as any).priceSummary;
+      const totals: any = (checkout as any).totals;
 
       const rawAmount =
-        checkout.priceSummary?.total?.amount ??
-        checkout.priceSummary?.total?.value ??
-        checkout.totals?.grandTotal?.amount;
+        priceSummary?.total?.amount ??
+        priceSummary?.total?.value ??
+        totals?.grandTotal?.amount;
 
       const amountNumber =
         typeof rawAmount === "string"
@@ -80,9 +132,12 @@ export async function POST(req: NextRequest) {
     // -----------------------------
     // CREATE ORDER IN WIX
     // -----------------------------
-    const order = await wixClient.checkout.createOrder(checkoutId, paymentInfo);
+    const order: any = await wixClient.checkout.createOrder(
+      checkoutId,
+      paymentInfo as any
+    );
 
-    if (!order?.order?._id) {
+    if (!order?._id && !order?.order?._id) {
       return NextResponse.json(
         { error: "Wix failed to create order" },
         { status: 500 }
@@ -91,9 +146,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      orderId: order.order._id,
-      orderNumber: order.order.number,
-      order: order.order,
+      orderId: order._id || order.order?._id,
+      orderNumber: order.number || order.order?.number,
+      order,
     });
 
   } catch (err: any) {
