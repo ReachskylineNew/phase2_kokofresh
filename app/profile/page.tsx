@@ -319,20 +319,16 @@ const handleSave = async () => {
     <div className="flex flex-col sm:flex-row lg:flex-row items-center sm:items-start lg:items-center gap-4 lg:gap-8">
       <div className="relative flex-shrink-0">
         {profile?.profile?.photo?.url ? (
-          <div>just profile
-
-          </div>
-
-          // <img
-          //   src={profile.profile.photo.url}
-          //   alt={profile?.profile?.nickname || "Profile"}
-          //   loading="lazy"
-          //   decoding="async"
-          //   className="w-20 h-20 sm:w-16 sm:h-16 lg:w-24 lg:h-24 xl:w-28 xl:h-28 rounded-2xl border-4 border-[#FED649]/60 shadow-lg object-cover"
-          //   onError={(e) => {
-          //     (e.target as HTMLImageElement).src = "/fallback-avatar.png"
-          //   }}
-          // />
+          <img
+            src={profile.profile.photo.url}
+            alt={profile?.profile?.nickname || "Profile"}
+            loading="lazy"
+            decoding="async"
+            className="w-20 h-20 sm:w-16 sm:h-16 lg:w-24 lg:h-24 xl:w-28 xl:h-28 rounded-2xl border-4 border-[#FED649]/60 shadow-lg object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = "/fallback-avatar.png"
+            }}
+          />
         ) : (
           <div className="w-20 h-20 sm:w-16 sm:h-16 lg:w-24 lg:h-24 xl:w-28 xl:h-28 bg-[#111] rounded-2xl flex items-center justify-center border-4 border-[#FED649]/40 shadow-lg">
             <User className="h-8 w-8 sm:h-6 sm:w-6 lg:h-10 lg:w-10 xl:h-12 xl:w-12 text-[#FED649]" />

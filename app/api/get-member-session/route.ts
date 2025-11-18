@@ -171,9 +171,12 @@ export async function POST(req: NextRequest) {
             nickname: contactDetails.info?.name?.first || contactDetails.primaryInfo?.email?.split("@")[0] || "User",
             email: contactDetails.primaryInfo?.email,
             phone: contactDetails.primaryInfo?.phone,
-            photo: contactDetails.info?.picture ? {
-              url: contactDetails.info.picture
-            } : undefined,
+            // Profile photos are stored on Members, not Contacts
+            // The /api/contacts route now fetches and attaches profilePhoto from member
+            photo: contactDetails.profilePhoto || 
+                  (contactDetails.info?.picture ? {
+                    url: contactDetails.info.picture
+                  } : undefined),
           },
           contactInfo: contactDetails.info,
         }),

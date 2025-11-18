@@ -37,16 +37,29 @@ export async function POST(req: NextRequest) {
     // Cashfree Case
     // -----------------------------
     else if (paymentMethod === "cashfree") {
-      // Fetch checkout info to get final amount
+      // Fetch checkout info to get final payable amount from priceSummary
       const checkout = await wixClient.checkout.getCheckout(checkoutId);
-      const amount = checkout.totals?.grandTotal?.amount;
+
+      const rawAmount =
+        checkout.priceSummary?.total?.amount ??
+        checkout.priceSummary?.total?.value ??
+        checkout.totals?.grandTotal?.amount;
+
+      const amountNumber =
+        typeof rawAmount === "string"
+          ? parseFloat(rawAmount)
+          : typeof rawAmount === "number"
+            ? rawAmount
+            : 0;
+
+      const safeAmount = Number.isFinite(amountNumber) ? amountNumber : 0;
 
       paymentInfo = {
         paymentProvider: "CASHFREE",
         paymentMethod: "cashfree",
         paymentDetails: {
           externalTransactionId: "cashfree-" + checkoutId,
-          amount,
+          amount: safeAmount,
           currency: "INR",
         },
       };

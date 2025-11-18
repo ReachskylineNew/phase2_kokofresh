@@ -244,28 +244,34 @@ export default function HeadlessCheckoutPage() {
       lastName: contact.info?.name?.last || prev.lastName,
     }));
 
-    // Load saved addresses
-    if (contact.info?.addresses?.length) {
-      const addresses = contact.info.addresses.map((addr: any) => ({
-        line1: addr.address?.streetAddress?.firstLine || "",
-        line2: addr.address?.streetAddress?.secondLine || "",
-        city: addr.address?.city || "",
-        region: addr.address?.subdivision || "",
-        postalCode: addr.address?.postalCode || "",
-        country: addr.address?.country || "India",
-        notes: "",
-      }));
+    // Load saved addresses - handle both items array and direct array
+    const addressesList = contact.info?.addresses?.items || contact.info?.addresses || [];
+    if (addressesList.length > 0) {
+      const addresses = addressesList.map((addr: any) => {
+        // Handle different address structures
+        const addressObj = addr.address || addr;
+        return {
+          line1: addressObj?.streetAddress?.firstLine || addressObj?.addressLine1 || "",
+          line2: addressObj?.streetAddress?.secondLine || addressObj?.addressLine2 || "",
+          city: addressObj?.city || "",
+          region: addressObj?.subdivision || "",
+          postalCode: addressObj?.postalCode || "",
+          country: addressObj?.country || "India",
+          notes: "",
+        };
+      });
       setSavedAddresses(addresses);
 
       // Pre-fill with primary address
-      const primaryAddress = contact.info.addresses[0];
+      const primaryAddress = addressesList[0];
+      const addressObj = primaryAddress.address || primaryAddress;
       setAddressState((prev) => ({
-        line1: primaryAddress.address?.streetAddress?.firstLine || prev.line1,
-        line2: primaryAddress.address?.streetAddress?.secondLine || prev.line2,
-        city: primaryAddress.address?.city || prev.city,
-        region: primaryAddress.address?.subdivision || prev.region,
-        postalCode: primaryAddress.address?.postalCode || prev.postalCode,
-        country: primaryAddress.address?.country || prev.country || "India",
+        line1: addressObj?.streetAddress?.firstLine || addressObj?.addressLine1 || prev.line1,
+        line2: addressObj?.streetAddress?.secondLine || addressObj?.addressLine2 || prev.line2,
+        city: addressObj?.city || prev.city,
+        region: addressObj?.subdivision || prev.region,
+        postalCode: addressObj?.postalCode || prev.postalCode,
+        country: addressObj?.country || prev.country || "India",
         notes: prev.notes,
       }));
     }

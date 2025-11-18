@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Kokofresh Checkout Test</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 20px; }
+    button { margin: 4px 0; padding: 8px 12px; }
+    textarea { width: 100%; height: 200px; margin-top: 10px; }
+    input { width: 100%; padding: 6px; margin: 4px 0 10px; }
+  </style>
+</head>
+<body>
+  <h1>Kokofresh Checkout Test (No Real Payment)</h1>
+
+  <p>
+    This page is served from the same origin as your API, so you can test checkout
+    without any real Cashfree payments.
+  </p>
+
+  <p><strong>Current origin:</strong> <span id="origin"></span></p>
+
+  <div>
+    <button id="btnInit">1. Init Checkout (/api/checkout/init)</button><br>
+    <button id="btnUpdate">2. Update Checkout (buyer + address + shipping)</button><br>
+    <button id="btnCod">3. Place Order - COD</button><br>
+    <button id="btnCashfree">4. Place Order - Fake Cashfree</button>
+  </div>
+
+  <p>Current checkoutId: <span id="checkoutId">none</span></p>
+
+  <h3>Last response</h3>
+  <textarea id="output" readonly></textarea>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const log = (obj) => { $("output").value = JSON.stringify(obj, null, 2); };
+
+    // Always call APIs on the same origin this page is served from
+    const getBase = () => window.location.origin;
+    let checkoutId = null;
+
+    $("origin").textContent = getBase();
+
+    async function initCheckout() {
+      try {
+        const res = await fetch(getBase() + "/api/checkout/init", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({})
+        });
+        const data = await res.json();
+        checkoutId = data.checkoutId || null;
+        $("checkoutId").textContent = checkoutId || "none";
+        log(data);
+      } catch (e) {
+        log({ error: String(e) });
+      }
+    }
+
+    async function updateCheckout() {
+      if (!checkoutId) {
+        alert("Run step 1 first to get checkoutId");
+        return;
+      }
+      const body = {
+        checkoutId,
+        buyerInfo: {
+          email: "test@example.com",
+          phone: "+919876543210",
+          firstName: "Test",
+          lastName: "User"
+        },
+        shippingAddress: {
+          line1: "123 Test Street",
+          line2: "Near Landmark",
+          city: "Chennai",
+          region: "Tamil Nadu",
+          postalCode: "600001",
+          country: "IN",
+          notes: "Test order"
+        },
+        // Adjust this to match one of your shippingOption ids if needed
+        shippingOptionId: "standard"
+      };
+
+      try {
+        const res = await fetch(getBase() + "/api/checkout/update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        log(data);
+      } catch (e) {
+        log({ error: String(e) });
+      }
+    }
+
+    async function placeOrder(paymentMethod) {
+      if (!checkoutId) {
+        alert("Run step 1 first to get checkoutId");
+        return;
+      }
+      const body = { checkoutId, paymentMethod };
+
+      try {
+        const res = await fetch(getBase() + "/api/checkout/place-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        log(data);
+      } catch (e) {
+        log({ error: String(e) });
+      }
+    }
+
+    $("btnInit").onclick = initCheckout;
+    $("btnUpdate").onclick = updateCheckout;
+    $("btnCod").onclick = () => placeOrder("cod");
+    $("btnCashfree").onclick = () => placeOrder("cashfree");
+  </script>
+</body>
+</html>
+
+

@@ -129,6 +129,25 @@ export async function GET(req: NextRequest) {
 
     // Case 1: We have a session token from VELO → proceed to /auth/callback
     if (syncData.sessionToken) {
+      // Update member profile photo if picture is provided and memberId exists
+      if (userInfo.picture?.data?.url && syncData.memberId) {
+        try {
+          // Call API to update member profile photo (non-blocking)
+          fetch(`${req.nextUrl.origin}/api/update-member-photo`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              memberId: syncData.memberId,
+              pictureUrl: userInfo.picture.data.url,
+            }),
+          }).catch((err) => {
+            console.warn("⚠️ Failed to update member photo (non-critical):", err);
+          });
+        } catch (err) {
+          console.warn("⚠️ Error updating member photo:", err);
+        }
+      }
+
       const callbackUrl = new URL(`${req.nextUrl.origin}/auth/callback`);
       callbackUrl.searchParams.set("sessionToken", syncData.sessionToken);
       callbackUrl.searchParams.set("provider", "facebook");

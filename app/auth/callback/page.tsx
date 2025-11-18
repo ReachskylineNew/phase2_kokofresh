@@ -48,6 +48,7 @@ export default function AuthCallbackPage() {
             try { localStorage.setItem("wixSession", sessionToken) } catch (_) {}
 
             // 1) Apply the session token via @wix/members to establish identity
+            // This MUST be done before getMemberTokensForDirectLogin
             try {
               const { authentication: membersAuth } = await import("@wix/members")
               await membersAuth.applySessionToken(sessionToken)
@@ -57,11 +58,16 @@ export default function AuthCallbackPage() {
             }
 
             // 2) Convert session token to OAuth tokens (preferred)
+            // Note: applySessionToken must be called first
             let tokens
             try {
+              // Ensure client has the session token context
               tokens = await wixClient.auth.getMemberTokensForDirectLogin(sessionToken)
-            } catch (convErr) {
-              console.warn("⚠️ getMemberTokensForDirectLogin failed, will decode JWS and proceed session-only:", convErr)
+              console.log("✅ Successfully converted session token to OAuth tokens")
+            } catch (convErr: any) {
+              console.warn("⚠️ getMemberTokensForDirectLogin failed:", convErr?.message || convErr)
+              console.warn("⚠️ Will proceed with session-only mode (decoded JWS)")
+              // Don't set tokens - will use session-only mode below
             }
 
             if (tokens?.accessToken && tokens?.refreshToken) {
@@ -130,12 +136,20 @@ export default function AuthCallbackPage() {
             wixClient.auth.setTokens(tokens)
           }
 
-          // Get current member to verify login
-          const currentMember = await wixClient.members.getCurrentMember()
-          console.log("✅ Logged in member:", currentMember.member?.profile?.nickname)
+          // Get current member to verify login (only if we have tokens)
+          let currentMember = null;
+          if (tokens?.accessToken && tokens?.refreshToken) {
+            try {
+              currentMember = await wixClient.members.getCurrentMember()
+              console.log("✅ Logged in member:", currentMember.member?.profile?.nickname)
+            } catch (memberErr: any) {
+              console.warn("⚠️ Could not get current member (non-critical):", memberErr?.message);
+              // Don't fail login if this fails - we have session token
+            }
+          }
 
-          // Store member info
-          if (currentMember.member) {
+          // Store member info (use decoded data if getCurrentMember failed)
+          if (currentMember?.member) {
             const memberData = {
               memberId: currentMember.member._id,
               contactId: currentMember.member.contactId,
@@ -146,6 +160,9 @@ export default function AuthCallbackPage() {
               admin: false,
             }
             localStorage.setItem("wixMember", JSON.stringify(memberData))
+          } else {
+            // If getCurrentMember failed, we already stored member data from JWS decode above
+            console.log("✅ Using member data from session token decode");
           }
 
           // Dispatch auth change event
@@ -235,12 +252,18 @@ export default function AuthCallbackPage() {
         wixClient.auth.setTokens(tokens)
 
         // Get current member to verify login/signup
-        const currentMember = await wixClient.members.getCurrentMember()
-        console.log("✅ Logged in member:", currentMember.member?.profile?.nickname)
-        console.log("📋 Full member data:", currentMember.member)
+        let currentMember = null;
+        try {
+          currentMember = await wixClient.members.getCurrentMember()
+          console.log("✅ Logged in member:", currentMember.member?.profile?.nickname)
+          console.log("📋 Full member data:", currentMember.member)
+        } catch (memberErr: any) {
+          console.warn("⚠️ Could not get current member:", memberErr?.message);
+          // Continue - tokens are set, member data will be fetched later
+        }
 
         // Store member info in localStorage for consistency with custom login
-        if (currentMember.member) {
+        if (currentMember?.member) {
           const memberData = {
             memberId: currentMember.member._id,
             contactId: currentMember.member.contactId,
@@ -252,6 +275,8 @@ export default function AuthCallbackPage() {
           }
           localStorage.setItem("wixMember", JSON.stringify(memberData))
           console.log("✅ Member data stored in localStorage:", memberData)
+        } else {
+          console.log("⚠️ Could not get member data, but tokens are set - will fetch later");
         }
 
         // Clear OAuth redirect data

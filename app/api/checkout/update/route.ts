@@ -54,17 +54,54 @@ export async function POST(req: NextRequest) {
       };
     }
 
-    // Update shipping method if provided
+    // Update shipping method / selected carrier service option if provided
     if (shippingOptionId) {
-      updatePayload.shippingInfo = {
-        ...updatePayload.shippingInfo,
-        logistics: {
-          ...updatePayload.shippingInfo?.logistics,
-          shippingMethod: {
-            id: shippingOptionId,
-          },
-        },
-      };
+      // Always ensure shippingInfo + logistics objects exist so we can safely extend them
+      if (!updatePayload.shippingInfo) {
+        updatePayload.shippingInfo = {};
+      }
+      if (!updatePayload.shippingInfo.logistics) {
+        updatePayload.shippingInfo.logistics = {};
+      }
+
+      // Fetch current checkout so we can find the matching carrierServiceOption
+      const checkout = await wixClient.checkout.getCheckout(checkoutId);
+      const availableMethods =
+        checkout.shippingInfo?.logistics?.availableShippingMethods || [];
+
+      // A shippingOptionId might refer either to the method id or the carrierServiceOption id.
+      // 1) Try to match by carrierServiceOption id
+      let selectedCarrierServiceOption: any | null = null;
+      for (const method of availableMethods) {
+        const options = method?.carrierServiceOptions || [];
+        const matchByOption = options.find(
+          (opt: any) => opt?.id === shippingOptionId
+        );
+        if (matchByOption) {
+          selectedCarrierServiceOption = matchByOption;
+          break;
+        }
+      }
+
+      // 2) If not found, try to match by method id and pick its first carrierServiceOption
+      if (!selectedCarrierServiceOption) {
+        const methodMatch = availableMethods.find(
+          (m: any) => m?.id === shippingOptionId || m?._id === shippingOptionId
+        );
+        if (methodMatch?.carrierServiceOptions?.length) {
+          selectedCarrierServiceOption = methodMatch.carrierServiceOptions[0];
+        }
+      }
+
+      if (!selectedCarrierServiceOption) {
+        console.warn(
+          "⚠️ No matching carrierServiceOption found for shippingOptionId",
+          shippingOptionId
+        );
+      } else {
+        updatePayload.shippingInfo.logistics.selectedCarrierServiceOption =
+          selectedCarrierServiceOption;
+      }
     }
 
     // Update checkout

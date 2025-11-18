@@ -129,6 +129,34 @@ export function UserProvider({ children }: { children: ReactNode }) {
             const contactDetails = await getContactDetails(memberData.contactId);
             if (contactDetails) {
               console.log("✅ Fetched contact details:", contactDetails);
+              
+              // Try to get member profile photo
+              let profilePhoto = undefined;
+              if (memberData.memberId) {
+                try {
+                  const memberRes = await fetch("/api/get-member", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ memberId: memberData.memberId }),
+                  });
+                  if (memberRes.ok) {
+                    const memberDataRes = await memberRes.json();
+                    // Handle different member response structures
+                    const member = memberDataRes.member || memberDataRes;
+                    const photoUrl = member?.profile?.profilePhoto?.url || 
+                                   member?.profilePhoto?.url ||
+                                   member?.profileInfo?.profilePhoto?.url;
+                    if (photoUrl) {
+                      profilePhoto = {
+                        url: photoUrl,
+                      };
+                    }
+                  }
+                } catch (photoErr) {
+                  console.warn("⚠️ Failed to fetch member photo:", photoErr);
+                }
+              }
+              
               return {
                 _id: memberData.memberId,
                 id: memberData.memberId,
@@ -138,9 +166,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
                   nickname: contactDetails.info?.name?.first || contactDetails.primaryInfo?.email?.split("@")[0] || "User",
                   email: contactDetails.primaryInfo?.email || memberData.email,
                   phone: contactDetails.primaryInfo?.phone,
-                  photo: contactDetails.info?.picture ? {
-                    url: contactDetails.info.picture
-                  } : undefined,
+                  photo: profilePhoto, // Use member profilePhoto
                 },
                 contactInfo: contactDetails.info,
                 owner: memberData.owner || false,
@@ -196,6 +222,33 @@ export function UserProvider({ children }: { children: ReactNode }) {
               const contactDetails = await getContactDetails(memberData.contactId);
               if (contactDetails) {
                 console.log("✅ Contact details fetched:", contactDetails);
+                // Try to get member profile photo
+                let profilePhoto = undefined;
+                if (memberData.memberId) {
+                  try {
+                    const memberRes = await fetch("/api/get-member", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ memberId: memberData.memberId }),
+                    });
+                    if (memberRes.ok) {
+                      const memberDataRes = await memberRes.json();
+                      // Handle different member response structures
+                      const member = memberDataRes.member || memberDataRes;
+                      const photoUrl = member?.profile?.profilePhoto?.url || 
+                                     member?.profilePhoto?.url ||
+                                     member?.profileInfo?.profilePhoto?.url;
+                      if (photoUrl) {
+                        profilePhoto = {
+                          url: photoUrl,
+                        };
+                      }
+                    }
+                  } catch (photoErr) {
+                    console.warn("⚠️ Failed to fetch member photo:", photoErr);
+                  }
+                }
+
                 // Build profile structure matching Wix SDK format
                 const profileData = {
                   _id: memberData.memberId,
@@ -208,9 +261,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
                              "User",
                     email: contactDetails.primaryInfo?.email || memberData.email,
                     phone: contactDetails.primaryInfo?.phone,
-                    photo: contactDetails.info?.picture ? {
-                      url: contactDetails.info.picture
-                    } : undefined,
+                    photo: profilePhoto, // Use member profilePhoto, not contact picture
                   },
                   contactInfo: contactDetails.info,
                   owner: memberData.owner || false,
@@ -258,7 +309,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         return memberFromSession;
       }
 
-      // Last resort: Try OAuth tokens (legacy)
+      // Last resort: Try OAuth tokens (legacy) or get member directly
       const token = Cookies.get("accessToken");
       const refresh = Cookies.get("refreshToken");
       
@@ -270,10 +321,39 @@ export function UserProvider({ children }: { children: ReactNode }) {
           });
           const result = await wixClient.members.getCurrentMember();
           if (result?.member) {
+            // Member object has profilePhoto in member.profile.profilePhoto
             return result.member;
           }
         } catch (err) {
           console.warn("Failed to use OAuth tokens:", err);
+        }
+      }
+
+      // Try to get member using Admin API if we have memberId
+      const storedMemberData = localStorage.getItem("wixMember");
+      if (storedMemberData) {
+        try {
+          const memberDataFromStorage = JSON.parse(storedMemberData);
+          if (memberDataFromStorage.memberId) {
+            // Fetch member with profile photo using Admin API
+            try {
+              const memberRes = await fetch("/api/get-member", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ memberId: memberDataFromStorage.memberId }),
+              });
+              if (memberRes.ok) {
+                const memberResponse = await memberRes.json();
+                if (memberResponse.member) {
+                  return memberResponse.member;
+                }
+              }
+            } catch (memberErr) {
+              console.warn("⚠️ Failed to fetch member:", memberErr);
+            }
+          }
+        } catch (parseErr) {
+          // Ignore
         }
       }
 

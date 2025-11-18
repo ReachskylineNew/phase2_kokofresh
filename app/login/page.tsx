@@ -40,21 +40,49 @@ export default function LoginPage() {
     }),
   });
 
-  // Check for accountExists query parameter
+  // Check for accountExists query parameter and error messages
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search)
-    const accountExistsParam = urlParams.get("accountExists")
-    const emailParam = urlParams.get("email")
+    const params = new URLSearchParams(window.location.search);
+    const exists = params.get("accountExists");
+    const email = params.get("email");
+    const error = params.get("error");
 
-    if (accountExistsParam === "true" && emailParam) {
-      setAccountExists(true)
-      setExistingEmail(emailParam)
-      setFormData(prev => ({ ...prev, email: emailParam }))
-      setAuthMethod("email")
+    if (exists) {
+      setAccountExists(true);
+      setExistingEmail(email || "");
+      setFormData(prev => ({ ...prev, email: email || "" }));
+      setAuthMethod("email");
+      
+      // Show appropriate message based on error type
+      if (error === "email_password_required") {
+        toast.info("This account was created with email/password. Please login with your password.", {
+          duration: 5000,
+        });
+      } else {
+        toast.info("Account exists. Please login with your email and password.", {
+          duration: 4000,
+        });
+      }
+      
       // Clear the URL parameters
-      window.history.replaceState({}, document.title, window.location.pathname)
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (error) {
+      // Handle other errors
+      const errorMessages: Record<string, string> = {
+        wix_sync_failed: "Failed to sync with account. Please try again.",
+        authentication_failed: "Authentication failed. Please try again.",
+        token_exchange_failed: "Failed to complete authentication. Please try again.",
+        failed_to_fetch_user_info: "Failed to get user information. Please try again.",
+      };
+      
+      toast.error(errorMessages[error] || "An error occurred. Please try again.", {
+        duration: 5000,
+      });
+      
+      // Clear the error parameter
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, [])
+  }, []);
 //   useEffect(() => {
 //     const accessToken = Cookies.get("accessToken")
 //     setIsLoggedIn(!!accessToken)
