@@ -11,6 +11,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
+    // Validate checkoutId format
+    if (typeof checkoutId !== "string" || checkoutId.trim() === "") {
+      return NextResponse.json({ error: "Invalid checkoutId" }, { status: 400 });
+    }
+
     const cfHeaders = {
       "accept": "application/json",
       "content-type": "application/json",
@@ -24,10 +29,67 @@ export async function POST(req: NextRequest) {
 
     const cleanPhone = customerPhone.replace(/\D/g, ""); // Remove spaces, +, -, etc.
 
-    // Get base URL from environment variable or use current origin
-    const baseUrl = process.env.NEXT_PUBLIC_URL || 
-                   process.env.NEXT_PUBLIC_SITE_URL || 
-                   (process.env.NODE_ENV === "production" ? "https://kokofresh.in" : "http://localhost:3000");
+    // Get base URL from environment variable, request origin, or fallback
+    let baseUrl = process.env.NEXT_PUBLIC_URL || 
+                  process.env.NEXT_PUBLIC_SITE_URL;
+    
+    // If no env var, try to get from request
+    if (!baseUrl) {
+      const origin = req.headers.get("origin") || req.nextUrl.origin;
+      if (origin && origin !== "http://localhost:3000") {
+        baseUrl = origin;
+      }
+    }
+    
+    // Final fallback
+    if (!baseUrl) {
+      baseUrl = process.env.NODE_ENV === "production" ? "https://kokofresh.in" : "http://localhost:3000";
+    }
+
+    // Ensure URL has protocol and is properly formatted
+    baseUrl = baseUrl.trim();
+    if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
+      // If no protocol, assume https in production, http in development
+      baseUrl = process.env.NODE_ENV === "production" ? `https://${baseUrl}` : `http://${baseUrl}`;
+    }
+    
+    // Remove trailing slash if present
+    baseUrl = baseUrl.replace(/\/$/, "");
+
+    // Ensure URL is valid
+    try {
+      new URL(baseUrl);
+    } catch (e) {
+      console.error("❌ Invalid base URL:", baseUrl);
+      baseUrl = process.env.NODE_ENV === "production" ? "https://kokofresh.in" : "http://localhost:3000";
+    }
+
+    // Build URLs with proper encoding
+    const encodedCheckoutId = encodeURIComponent(checkoutId.trim());
+    const returnUrl = `${baseUrl}/payment-success?checkoutId=${encodedCheckoutId}`;
+    const notifyUrl = `${baseUrl}/api/cashfree/webhook`;
+
+    // Validate URLs are valid
+    try {
+      new URL(returnUrl);
+      new URL(notifyUrl);
+    } catch (e) {
+      console.error("❌ Invalid URL constructed:", { returnUrl, notifyUrl });
+      return NextResponse.json({ 
+        error: "Failed to construct valid payment URLs",
+        details: "Please set NEXT_PUBLIC_URL environment variable"
+      }, { status: 500 });
+    }
+
+    console.log("🌐 Base URL:", baseUrl);
+    console.log("🔗 Return URL:", returnUrl);
+    console.log("📡 Notify URL:", notifyUrl);
+    console.log("📦 Checkout ID:", checkoutId);
+    console.log("🔍 Environment:", {
+      NEXT_PUBLIC_URL: process.env.NEXT_PUBLIC_URL ? "set" : "not set",
+      NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL ? "set" : "not set",
+      NODE_ENV: process.env.NODE_ENV,
+    });
 
     const payload = {
       order_id: cashfreeOrderId, // Unique per payment attempt
@@ -39,13 +101,13 @@ export async function POST(req: NextRequest) {
         customer_phone: cleanPhone,
       },
       order_meta: {
-        return_url: `${baseUrl}/payment-success?checkoutId=${checkoutId}`,
-        notify_url: `${baseUrl}/api/cashfree/webhook`,
+        return_url: returnUrl,
+        notify_url: notifyUrl,
       },
     };
 
-    console.log("CF REQUEST:", payload);
-    console.log("CF HEADERS:", cfHeaders);
+    console.log("CF REQUEST:", JSON.stringify(payload, null, 2));
+    console.log("CF HEADERS:", { ...cfHeaders, "x-client-secret": "[REDACTED]" });
 
     const response = await fetch("https://api.cashfree.com/pg/orders", {
       method: "POST",

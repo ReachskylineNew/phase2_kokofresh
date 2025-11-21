@@ -3,12 +3,17 @@
 ## Issues Fixed
 
 ### 1. Cashfree Payment URLs
-**Problem**: Cashfree return_url and notify_url were hardcoded to `https://phase2-kokofresh-chi.vercel.app` instead of using the actual domain.
+**Problem**: Cashfree return_url and notify_url were hardcoded to `https://phase2-kokofresh-chi.vercel.app` instead of using the actual domain. Also getting "invalid url entered" error when URL was missing protocol.
 
 **Solution**: 
 - Updated `app/api/cashfree/create-session/route.ts` to use environment variables
-- Now uses `NEXT_PUBLIC_URL` or `NEXT_PUBLIC_SITE_URL` with fallback to `https://kokofresh.in` in production
-- Both `return_url` and `notify_url` now dynamically use the correct domain
+- Now uses `NEXT_PUBLIC_URL` or `NEXT_PUBLIC_SITE_URL` with multiple fallbacks
+- Automatically adds `https://` or `http://` protocol if missing
+- Falls back to request origin if environment variables not set
+- Validates URLs before sending to Cashfree
+- Properly encodes checkoutId in URL parameters
+- Added comprehensive logging to debug URL issues
+- Both `return_url` and `notify_url` now dynamically use the correct domain with proper protocol
 
 ### 2. Wix VELO Backend URLs
 **Problem**: Signup and signin were calling `https://kokofresh.in/_functions/...` but the Wix backend was moved to `backend.kokofresh.in`.
