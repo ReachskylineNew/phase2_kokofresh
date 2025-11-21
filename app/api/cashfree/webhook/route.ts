@@ -13,7 +13,7 @@ interface CashfreeWebhookEvent {
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const event: CashfreeWebhookEvent = await req.json();
-    console.log("📩 Cashfree Webhook Received:", event);
+    console.log("📩 Cashfree Webhook Received:", JSON.stringify(event, null, 2));
 
     const {
       order_id,
@@ -22,77 +22,158 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       order_amount,
     } = event?.data ?? {};
 
+    console.log("📊 Webhook data:", { order_id, order_status, payment_id, order_amount });
+
     if (order_status !== "PAID") {
       console.log("⚠️ Payment not completed. Status:", order_status);
-      return NextResponse.json({ received: true });
+      return NextResponse.json({ received: true, status: order_status });
     }
 
-    // Extract checkoutId from "checkoutId-timestamp"
-    const checkoutId = order_id?.split("-").slice(0, -1).join("-");
-
-    if (!checkoutId) {
-      console.error("❌ checkoutId missing in webhook order_id");
+    if (!order_id) {
+      console.error("❌ order_id missing in webhook event");
       return NextResponse.json(
-        { error: "Invalid checkout ID" },
+        { error: "Missing order_id in webhook" },
         { status: 400 }
       );
     }
 
-    console.log("🔍 Extracted checkoutId:", checkoutId);
+    // Extract checkoutId from "checkoutId-timestamp" format
+    // Cashfree order_id is in format: checkoutId-timestamp
+    const parts = order_id.split("-");
+    let checkoutId: string | undefined;
+    
+    // Try to extract checkoutId by removing the last part (timestamp)
+    if (parts.length > 1) {
+      // Remove the last element (timestamp) and join the rest
+      checkoutId = parts.slice(0, -1).join("-");
+    } else {
+      // If no dash, use the whole order_id as checkoutId
+      checkoutId = order_id;
+    }
+
+    if (!checkoutId) {
+      console.error("❌ checkoutId missing in webhook order_id:", order_id);
+      return NextResponse.json(
+        { error: "Invalid checkout ID", order_id },
+        { status: 400 }
+      );
+    }
+
+    console.log("🔍 Extracted checkoutId:", checkoutId, "from order_id:", order_id);
 
     const wixClient = await getWixServerClient();
 
-    // 🛑 Prevent duplicate order creation
-    const existingOrders = await wixClient.orders.queryOrders({
-      filter: { checkoutId },
-    });
+    // First, verify the checkout exists and is valid
+    let checkout;
+    try {
+      checkout = await wixClient.checkout.getCheckout(checkoutId);
+      console.log("✅ Checkout found:", checkoutId);
+    } catch (checkoutError: any) {
+      console.error("❌ Failed to get checkout:", checkoutError.message);
+      return NextResponse.json(
+        { 
+          error: "Checkout not found or invalid", 
+          checkoutId,
+          details: checkoutError.message 
+        },
+        { status: 404 }
+      );
+    }
 
-    if (existingOrders?.items?.length > 0) {
-      const existingOrder = existingOrders.items[0];
-      console.log("⚠️ Order already exists:", existingOrder._id);
+    // 🛑 Prevent duplicate order creation
+    let existingOrders;
+    try {
+      existingOrders = await wixClient.orders.searchOrders({
+        search: {
+          filter: {
+            checkoutId: { $eq: checkoutId },
+          },
+          cursorPaging: { limit: 1 },
+        },
+      });
+    } catch (queryError: any) {
+      console.warn("⚠️ Failed to query existing orders:", queryError.message);
+      // Continue with order creation
+      existingOrders = { orders: [] };
+    }
+
+    if (existingOrders?.orders && existingOrders.orders.length > 0) {
+      const existingOrder = existingOrders.orders[0];
+      const orderId = (existingOrder as any)?._id;
+      const orderNumber = (existingOrder as any)?.number;
+      console.log("⚠️ Order already exists:", orderId);
 
       return NextResponse.json({
         success: true,
         message: "Order already exists",
-        orderId: existingOrder._id,
-        orderNumber: existingOrder.number,
+        orderId,
+        orderNumber,
       });
     }
 
     console.log("🟢 Creating new Wix order for:", checkoutId);
 
+    // Get the final amount from checkout if order_amount is not provided
+    const priceSummary: any = (checkout as any).priceSummary;
+    const rawAmount = order_amount ?? 
+                     priceSummary?.total?.amount ?? 
+                     priceSummary?.total?.value ?? 
+                     0;
+    const finalAmount = typeof rawAmount === "number" ? rawAmount : parseFloat(String(rawAmount || "0"));
+
     // ⭐ FIX: TS-safe values (NO undefined allowed)
-    const transactionId = payment_id ?? `cashfree-${checkoutId}`;
-    const paidAmount = order_amount ?? 0;
+    const transactionId = payment_id || `cashfree-${checkoutId}-${Date.now()}`;
+    const paidAmount = Number.isFinite(finalAmount) ? finalAmount : 0;
+
+    console.log("💰 Payment details:", { transactionId, paidAmount, currency: "INR" });
 
     // Create Wix order
-    const order = await wixClient.checkout.createOrder({
-      checkoutId,
-      paymentInfo: {
-        paymentProvider: "CASHFREE",
-        paymentMethod: "cashfree",
-        paymentDetails: {
-          externalTransactionId: transactionId,
-          amount: paidAmount,
-          currency: "INR",
+    let order;
+    try {
+      order = await wixClient.checkout.createOrder({
+        checkoutId,
+        paymentInfo: {
+          paymentProvider: "CASHFREE",
+          paymentMethod: "cashfree",
+          paymentDetails: {
+            externalTransactionId: transactionId,
+            amount: paidAmount,
+            currency: "INR",
+          },
         },
-      },
-    });
+      } as any);
 
-    if (!order?._id) {
-      throw new Error("Failed to create Wix order");
+      console.log("📦 Order creation response:", JSON.stringify(order, null, 2));
+    } catch (createError: any) {
+      console.error("❌ Failed to create Wix order:", createError);
+      console.error("❌ Error details:", JSON.stringify(createError, null, 2));
+      throw new Error(`Failed to create Wix order: ${createError.message || createError}`);
     }
 
-    console.log("✅ Wix Order Created:", order._id);
+    // Handle different response structures from Wix
+    const orderId = (order as any)?._id || (order as any)?.orderId || (order as any)?.order?._id;
+    const orderNumber = (order as any)?.number || (order as any)?.order?.number;
+
+    if (!orderId) {
+      console.error("❌ Order created but no ID returned:", order);
+      throw new Error("Failed to create Wix order - no order ID returned");
+    }
+
+    console.log("✅ Wix Order Created:", { orderId, orderNumber });
 
     return NextResponse.json({
       success: true,
-      orderId: order._id,
-      orderNumber: order.number,
+      orderId,
+      orderNumber,
       message: "Order created via webhook",
     });
   } catch (error: any) {
     console.error("❌ Webhook Error:", error);
-    return NextResponse.json({ error: error.message, received: true });
+    console.error("❌ Error stack:", error.stack);
+    return NextResponse.json({ 
+      error: error.message || "Internal server error", 
+      received: true,
+      details: process.env.NODE_ENV === "development" ? error.stack : undefined
+    }, { status: 500 });
   }
 }

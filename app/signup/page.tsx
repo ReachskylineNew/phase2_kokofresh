@@ -62,7 +62,8 @@ const handleSignup = async (e: React.FormEvent) => {
     console.log("🚀 Registering user:", payload)
 
     // 🧩 2. Call your Velo function
-    const response = await fetch("https://kokofresh.in/_functions/registerUser", {
+    const wixBackendUrl = process.env.NEXT_PUBLIC_WIX_BACKEND_URL || "https://backend.kokofresh.in";
+    const response = await fetch(`${wixBackendUrl}/_functions/registerUser`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

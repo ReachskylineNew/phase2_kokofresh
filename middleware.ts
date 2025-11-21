@@ -5,7 +5,7 @@ const WIX_CLIENT_ID = "2656201f-a899-4ec4-8b24-d1132bcf5405";
 const IS_DEV = process.env.NODE_ENV === "development";
 const HEADLESS_URL = IS_DEV
   ? "http://localhost:3000"
-  : "https://kokofresh-new.vercel.app";
+  : process.env.NEXT_PUBLIC_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://kokofresh.in";
 
 // ✅ Export dummy middleware in dev to prevent build errors
 export async function middleware(req: NextRequest) {

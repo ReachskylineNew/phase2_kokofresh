@@ -24,6 +24,11 @@ export async function POST(req: NextRequest) {
 
     const cleanPhone = customerPhone.replace(/\D/g, ""); // Remove spaces, +, -, etc.
 
+    // Get base URL from environment variable or use current origin
+    const baseUrl = process.env.NEXT_PUBLIC_URL || 
+                   process.env.NEXT_PUBLIC_SITE_URL || 
+                   (process.env.NODE_ENV === "production" ? "https://kokofresh.in" : "http://localhost:3000");
+
     const payload = {
       order_id: cashfreeOrderId, // Unique per payment attempt
       order_amount: parseFloat(amount.toString()),
@@ -34,8 +39,8 @@ export async function POST(req: NextRequest) {
         customer_phone: cleanPhone,
       },
       order_meta: {
-        return_url: `https://phase2-kokofresh-chi.vercel.app/payment-success?checkoutId=${checkoutId}`,
-        notify_url: `https://phase2-kokofresh-chi.vercel.app/api/cashfree/webhook`,
+        return_url: `${baseUrl}/payment-success?checkoutId=${checkoutId}`,
+        notify_url: `${baseUrl}/api/cashfree/webhook`,
       },
     };
 

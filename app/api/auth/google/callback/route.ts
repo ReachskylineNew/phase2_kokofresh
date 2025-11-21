@@ -76,7 +76,8 @@ export async function GET(req: NextRequest) {
     console.log("Google user:", userInfo);
 
     // Call VELO sync
-    const wixRes = await fetch("https://kokofresh.in/_functions/syncSocialAuth", {
+    const wixBackendUrl = process.env.NEXT_PUBLIC_WIX_BACKEND_URL || process.env.WIX_BACKEND_URL || "https://backend.kokofresh.in";
+    const wixRes = await fetch(`${wixBackendUrl}/_functions/syncSocialAuth`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -214,7 +215,8 @@ export async function GET(req: NextRequest) {
     // Fallback for new_user_created status (shouldn't happen with new VELO code, but handle it)
     if (data.status === "new_user_created" && data.socialPassword) {
       console.log("⚠️ Fallback: Attempting login for new user");
-      const loginRes = await fetch("https://kokofresh.in/_functions/loginUser", {
+      const wixBackendUrl = process.env.NEXT_PUBLIC_WIX_BACKEND_URL || process.env.WIX_BACKEND_URL || "https://backend.kokofresh.in";
+      const loginRes = await fetch(`${wixBackendUrl}/_functions/loginUser`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

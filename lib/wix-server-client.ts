@@ -1,11 +1,40 @@
 import { createClient, OAuthStrategy } from "@wix/sdk";
-import { currentCart, checkout } from "@wix/ecom";
+import { currentCart, checkout, orders } from "@wix/ecom";
 import { members } from "@wix/members";
 import { cookies } from "next/headers";
 
 /**
+ * Generate visitor tokens for server-side operations
+ */
+async function generateVisitorTokens() {
+  try {
+    const clientId = process.env.NEXT_PUBLIC_WIX_CLIENT_ID || "2656201f-a899-4ec4-8b24-d1132bcf5405";
+    const response = await fetch("https://www.wixapis.com/oauth2/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        grantType: "anonymous",
+        clientId,
+      }),
+    });
+
+    if (response.ok) {
+      const tokenData = await response.json();
+      return {
+        accessToken: { value: tokenData.access_token },
+        refreshToken: { value: tokenData.refresh_token },
+      };
+    }
+  } catch (error) {
+    console.error("Failed to generate visitor tokens:", error);
+  }
+  return undefined;
+}
+
+/**
  * Server-side Wix client for API routes
  * Uses Next.js cookies() to read tokens from cookies
+ * Falls back to visitor tokens if no user tokens are available
  */
 export async function getWixServerClient() {
   const cookieStore = await cookies();
@@ -40,7 +69,7 @@ export async function getWixServerClient() {
     console.warn("Failed to read tokens from cookies:", error);
   }
 
-  const tokens =
+  let tokens =
     accessToken && refreshToken
       ? {
           accessToken: { value: accessToken },
@@ -48,9 +77,10 @@ export async function getWixServerClient() {
         }
       : undefined;
 
+  // If no tokens available, generate visitor tokens (useful for webhooks)
   if (!tokens) {
-    console.warn("⚠️ No tokens found in cookies. Checkout operations may fail for guest users.");
-    console.warn("💡 Visitor tokens should be created via /api/visitor-token before checkout");
+    console.log("⚠️ No user tokens found, generating visitor tokens for server-side operation");
+    tokens = await generateVisitorTokens();
   }
 
   const client = createClient({
@@ -58,6 +88,7 @@ export async function getWixServerClient() {
       currentCart,
       checkout,
       members,
+      orders,
     },
     auth: OAuthStrategy({
       clientId: process.env.NEXT_PUBLIC_WIX_CLIENT_ID!,

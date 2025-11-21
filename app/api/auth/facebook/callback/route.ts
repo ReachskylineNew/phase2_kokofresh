@@ -77,7 +77,8 @@ export async function GET(req: NextRequest) {
     console.log("✅ Facebook user info received:", { email: userInfo.email, name: userInfo.name });
 
     // Sync with Wix via VELO backend
-    const wixFunctionUrl = "https://kokofresh.in/_functions/syncSocialAuth";
+    const wixBackendUrl = process.env.NEXT_PUBLIC_WIX_BACKEND_URL || process.env.WIX_BACKEND_URL || "https://backend.kokofresh.in";
+    const wixFunctionUrl = `${wixBackendUrl}/_functions/syncSocialAuth`;
     const syncPayload = {
       provider: "facebook",
       email: userInfo.email,
