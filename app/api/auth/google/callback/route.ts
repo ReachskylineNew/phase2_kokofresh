@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
     console.log("Google user:", userInfo);
 
     // Call VELO sync
-    const wixRes = await fetch("https://chinmaybhatk.wixsite.com/flavorzapp/_functions/syncSocialAuth", {
+    const wixRes = await fetch("https://kokofresh.in/_functions/syncSocialAuth", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -214,7 +214,7 @@ export async function GET(req: NextRequest) {
     // Fallback for new_user_created status (shouldn't happen with new VELO code, but handle it)
     if (data.status === "new_user_created" && data.socialPassword) {
       console.log("⚠️ Fallback: Attempting login for new user");
-      const loginRes = await fetch("https://chinmaybhatk.wixsite.com/flavorzapp/_functions/loginUser", {
+      const loginRes = await fetch("https://kokofresh.in/_functions/loginUser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

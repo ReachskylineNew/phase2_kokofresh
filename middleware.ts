@@ -18,7 +18,7 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
 
   // 🛒 1️⃣ Handle Wix Checkout → Cart Redirects
-  if (url.hostname === "www.chinmaybhatk.wixsite.com/flavorzapp" && url.pathname.startsWith("/cart-page")) {
+  if (url.hostname === "www.kokofresh.in" && url.pathname.startsWith("/cart-page")) {
     const redirectUrl = `${HEADLESS_URL}/cart`;
     console.log("🔁 Redirecting from cart-page →", redirectUrl);
     return NextResponse.redirect(redirectUrl);

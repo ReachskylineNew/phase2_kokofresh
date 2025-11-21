@@ -179,7 +179,7 @@ export default function TermsPage() {
                   <strong>Business Name:</strong> CKGFLAVORZ FOODTECH PRIVATE LIMITED
                 </p>
                 <p className="text-gray-700">
-                  <strong>Email:</strong> help@chinmaybhatk.wixsite.com/flavorzapp
+                  <strong>Email:</strong> help@kokofresh.in
                 </p>
                 <p className="text-gray-700">
                   <strong>Phone:</strong> +91-7892776610

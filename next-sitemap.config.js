@@ -1,6 +1,6 @@
 /** @type {import('next-sitemap').IConfig} */
 module.exports = {
-	siteUrl: "https://www.chinmaybhatk.wixsite.com/flavorzapp",
+	siteUrl: "https://www.kokofresh.in",
 	generateRobotsTxt: true,
 	exclude: ["/product", "/product/slug-redirect"],
 	transform: async (config, path) => {

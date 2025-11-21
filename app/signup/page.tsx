@@ -62,7 +62,7 @@ const handleSignup = async (e: React.FormEvent) => {
     console.log("🚀 Registering user:", payload)
 
     // 🧩 2. Call your Velo function
-    const response = await fetch("https://chinmaybhatk.wixsite.com/flavorzapp/_functions/registerUser", {
+    const response = await fetch("https://kokofresh.in/_functions/registerUser", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

@@ -3,7 +3,7 @@ User-agent: *
 Allow: /
 
 # Host
-Host: https://www.chinmaybhatk.wixsite.com/flavorzapp
+Host: https://www.kokofresh.in
 
 # Sitemaps
-Sitemap: https://www.chinmaybhatk.wixsite.com/flavorzapp/sitemap.xml
+Sitemap: https://www.kokofresh.in/sitemap.xml

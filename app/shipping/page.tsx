@@ -377,10 +377,10 @@ export default function ShippingPage() {
               <Mail className="h-12 w-12 text-[#FED649] mx-auto mb-4" />
               <h3 className="font-serif font-bold text-xl mb-2">Email Us</h3>
               <a
-                href="mailto:help@chinmaybhatk.wixsite.com/flavorzapp"
+                href="mailto:help@kokofresh.in"
                 className="text-[#FED649] hover:text-white transition-colors text-lg font-semibold"
               >
-                help@chinmaybhatk.wixsite.com/flavorzapp
+                help@kokofresh.in
               </a>
             </div>
 

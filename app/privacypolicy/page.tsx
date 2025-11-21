@@ -63,7 +63,7 @@ export default function PrivacyPage() {
     {
       level: "Level 1",
       title: "Customer Support Team",
-      email: "help@chinmaybhatk.wixsite.com/flavorzapp",
+      email: "help@kokofresh.in",
       phone: "+917899587137",
       responseTime: "Within 24 hours",
       resolutionTime: "Up to 48 hours",
@@ -315,14 +315,14 @@ export default function PrivacyPage() {
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <Globe className="h-5 w-5 text-[#DD9627]" />
-                <a href="https://chinmaybhatk.wixsite.com/flavorzapp" className="text-[#DD9627] font-semibold hover:underline">
-                  https://chinmaybhatk.wixsite.com/flavorzapp
+                <a href="https://kokofresh.in" className="text-[#DD9627] font-semibold hover:underline">
+                  https://kokofresh.in
                 </a>
               </div>
               <div className="flex items-center gap-3">
                 <Mail className="h-5 w-5 text-[#DD9627]" />
-                <a href="mailto:help@chinmaybhatk.wixsite.com/flavorzapp" className="text-[#DD9627] font-semibold hover:underline">
-                  help@chinmaybhatk.wixsite.com/flavorzapp
+                <a href="mailto:help@kokofresh.in" className="text-[#DD9627] font-semibold hover:underline">
+                  help@kokofresh.in
                 </a>
               </div>
             </div>
@@ -410,11 +410,11 @@ export default function PrivacyPage() {
                   <p className="text-[#6B4A0F]">
                     <span className="font-semibold">CKGFLAVORZ FOODTECH PRIVATE LIMITED</span>
                   </p>
-                  <a href="https://chinmaybhatk.wixsite.com/flavorzapp" className="text-[#DD9627] hover:underline block">
-                    https://chinmaybhatk.wixsite.com/flavorzapp
+                  <a href="https://kokofresh.in" className="text-[#DD9627] hover:underline block">
+                    https://kokofresh.in
                   </a>
-                  <a href="mailto:help@chinmaybhatk.wixsite.com/flavorzapp" className="text-[#DD9627] hover:underline block">
-                    help@chinmaybhatk.wixsite.com/flavorzapp
+                  <a href="mailto:help@kokofresh.in" className="text-[#DD9627] hover:underline block">
+                    help@kokofresh.in
                   </a>
                 </div>
               </CardContent>
