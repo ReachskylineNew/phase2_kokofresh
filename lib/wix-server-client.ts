@@ -78,8 +78,11 @@ export async function getWixServerClient() {
       : undefined;
 
   // If no tokens available, generate visitor tokens (useful for webhooks)
+  // NOTE: Visitor tokens should still work for creating orders from WEB checkouts
+  // The checkout's channelType should be inherited by the order
   if (!tokens) {
     console.log("⚠️ No user tokens found, generating visitor tokens for server-side operation");
+    console.log("⚠️ Note: Orders created from WEB checkouts should inherit channelType even with visitor tokens");
     tokens = await generateVisitorTokens();
   }
 

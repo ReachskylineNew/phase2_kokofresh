@@ -24,6 +24,20 @@ export async function POST(req: NextRequest) {
     // Always fetch checkout so we can ensure shipping is valid and, for Cashfree,
     // get the final payable amount.
     let checkout = await wixClient.checkout.getCheckout(checkoutId);
+    
+    // Log checkout channel info to ensure it's WEB, not BACKOFFICE
+    const checkoutChannelType = (checkout as any)?.channelType || (checkout as any)?.channelInfo?.type;
+    console.log("🔍 Checkout channel type:", checkoutChannelType);
+    console.log("🔍 Checkout details:", {
+      checkoutId,
+      channelType: checkoutChannelType,
+      hasLineItems: !!(checkout as any)?.lineItems?.length,
+    });
+    
+    if (!checkoutChannelType || (checkoutChannelType !== "WEB" && checkoutChannelType !== "ONLINE_STORE")) {
+      console.warn("⚠️ WARNING: Checkout does not have WEB channelType:", checkoutChannelType);
+      console.warn("⚠️ Order created from this checkout may not appear in Store Dashboard");
+    }
 
     // ------------------------------------------------------------------
     // Ensure a selectedCarrierServiceOption exists on the checkout
@@ -127,7 +141,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log("Sending paymentInfo to Wix:", paymentInfo);
+    console.log("Sending paymentInfo to Wix:", JSON.stringify(paymentInfo, null, 2));
 
     // -----------------------------
     // CHECK FOR EXISTING ORDER (webhook might have created it)
@@ -146,7 +160,14 @@ export async function POST(req: NextRequest) {
         const existingOrder = existingOrders.orders[0];
         const orderId = (existingOrder as any)?._id;
         const orderNumber = (existingOrder as any)?.number;
-        console.log("⚠️ Order already exists for checkout:", orderId);
+        const paymentStatus = (existingOrder as any)?.paymentStatus;
+        const channelInfo = (existingOrder as any)?.channelInfo;
+        console.log("⚠️ Order already exists for checkout:", {
+          orderId,
+          orderNumber,
+          paymentStatus,
+          channelInfo,
+        });
         return NextResponse.json({
           success: true,
           orderId,
@@ -164,10 +185,40 @@ export async function POST(req: NextRequest) {
     // -----------------------------
     let order: any;
     try {
+      const orderPayload: any = {
+        checkoutId,
+        ...paymentInfo,
+      };
+      
+      console.log("📦 Creating order with payload:", JSON.stringify(orderPayload, null, 2));
+      console.log("📦 Checkout channelType:", checkoutChannelType, "- order should inherit this");
+      
       order = await wixClient.checkout.createOrder(
         checkoutId,
         paymentInfo as any
       );
+      
+      const orderChannelType = (order as any)?.channelInfo?.type || (order as any)?.channelType;
+      const orderStatus = (order as any)?.status;
+      const orderPaymentStatus = (order as any)?.paymentStatus;
+      
+      console.log("📦 Order created:", {
+        orderId: (order as any)?._id || (order as any)?.orderId,
+        orderNumber: (order as any)?.number,
+        paymentStatus: orderPaymentStatus,
+        status: orderStatus,
+        channelInfo: (order as any)?.channelInfo,
+        channelType: orderChannelType,
+      });
+      
+      // Verify order was created as WEB order, not BACKOFFICE
+      if (orderChannelType === "BACKOFFICE_MERCHANT" || orderChannelType === "BACKOFFICE") {
+        console.error("❌ WARNING: Order created as BACKOFFICE instead of WEB!");
+        console.error("❌ This order will NOT appear in Wix Store Dashboard");
+        console.error("❌ Expected WEB channelType from checkout:", checkoutChannelType);
+      } else if (orderChannelType === "WEB" || orderChannelType === "ONLINE_STORE") {
+        console.log("✅ Order created as WEB/ONLINE_STORE order - will appear in Store Dashboard");
+      }
     } catch (createError: any) {
       // If order creation fails due to duplicate, try to fetch existing order
       if (createError.message?.includes("already exists") || createError.message?.includes("duplicate")) {

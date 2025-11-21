@@ -101,6 +101,7 @@ export async function POST(req: NextRequest) {
     const wixClient = await getWixServerClient();
 
     // Create checkout from current cart
+    // CRITICAL: Must use channelType: "WEB" to create Store Orders, not Backoffice Orders
     const { checkoutId } = await wixClient.currentCart.createCheckoutFromCurrentCart({
       channelType: "WEB",
     });
@@ -114,6 +115,20 @@ export async function POST(req: NextRequest) {
 
     // Get checkout details to calculate totals
     const checkout = await wixClient.checkout.getCheckout(checkoutId);
+    
+    // Verify checkout has correct channel type
+    const checkoutChannelType = (checkout as any)?.channelType || (checkout as any)?.channelInfo?.type;
+    console.log("📦 Checkout created:", {
+      checkoutId,
+      channelType: checkoutChannelType,
+      expected: "WEB",
+    });
+    
+    if (checkoutChannelType !== "WEB" && checkoutChannelType !== "ONLINE_STORE") {
+      console.error("❌ WARNING: Checkout created with wrong channelType:", checkoutChannelType);
+      console.error("❌ Orders from this checkout may not appear in Store Dashboard");
+    }
+    
     console.log("📦 Checkout object:", JSON.stringify(checkout, null, 2));
 
     // Calculate totals from line items as fallback

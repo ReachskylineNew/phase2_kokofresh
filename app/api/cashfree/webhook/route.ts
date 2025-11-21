@@ -68,6 +68,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     try {
       checkout = await wixClient.checkout.getCheckout(checkoutId);
       console.log("✅ Checkout found:", checkoutId);
+      console.log("📦 Checkout channelInfo:", (checkout as any)?.channelInfo);
+      console.log("📦 Checkout channelType:", (checkout as any)?.channelType);
     } catch (checkoutError: any) {
       console.error("❌ Failed to get checkout:", checkoutError.message);
       return NextResponse.json(
@@ -127,10 +129,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     console.log("💰 Payment details:", { transactionId, paidAmount, currency: "INR" });
 
-    // Create Wix order
+    // Create Wix order with explicit payment info
+    // IMPORTANT: Order must be created from a checkout with channelType: "WEB" to appear in Store Dashboard
+    // The checkout should already have channelType: "WEB" from createCheckoutFromCurrentCart
     let order;
     try {
-      order = await wixClient.checkout.createOrder({
+      // Ensure we're creating a store order, not a backoffice order
+      // The checkout's channelType should be inherited by the order
+      const checkoutChannelType = (checkout as any)?.channelType || (checkout as any)?.channelInfo?.type;
+      console.log("🔍 Checkout channel type:", checkoutChannelType);
+      
+      const orderPayload: any = {
         checkoutId,
         paymentInfo: {
           paymentProvider: "CASHFREE",
@@ -141,9 +150,39 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             currency: "INR",
           },
         },
-      } as any);
+      };
+
+      // If checkout has channelType, ensure order inherits it
+      // Note: Wix should automatically inherit channelType from checkout, but we log it for debugging
+      if (checkoutChannelType) {
+        console.log("✅ Checkout has channelType:", checkoutChannelType, "- order should inherit this");
+      } else {
+        console.warn("⚠️ Checkout missing channelType - order may be created as backoffice order");
+      }
+
+      console.log("📦 Creating order with payload:", JSON.stringify(orderPayload, null, 2));
+      console.log("📦 Checkout details:", {
+        checkoutId,
+        channelType: checkoutChannelType,
+        hasLineItems: !!(checkout as any)?.lineItems?.length,
+      });
+      
+      order = await wixClient.checkout.createOrder(orderPayload);
 
       console.log("📦 Order creation response:", JSON.stringify(order, null, 2));
+      console.log("📦 Order channelInfo:", (order as any)?.channelInfo);
+      console.log("📦 Order paymentStatus:", (order as any)?.paymentStatus);
+      console.log("📦 Order status:", (order as any)?.status);
+      
+      // Verify order was created as WEB order, not BACKOFFICE
+      const orderChannelType = (order as any)?.channelInfo?.type || (order as any)?.channelType;
+      if (orderChannelType === "BACKOFFICE_MERCHANT" || orderChannelType === "BACKOFFICE") {
+        console.error("❌ WARNING: Order created as BACKOFFICE instead of WEB!");
+        console.error("❌ This order will NOT appear in Wix Store Dashboard");
+        console.error("❌ Checkout channelType was:", checkoutChannelType);
+      } else if (orderChannelType === "WEB") {
+        console.log("✅ Order created as WEB order - will appear in Store Dashboard");
+      }
     } catch (createError: any) {
       console.error("❌ Failed to create Wix order:", createError);
       console.error("❌ Error details:", JSON.stringify(createError, null, 2));
@@ -159,12 +198,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       throw new Error("Failed to create Wix order - no order ID returned");
     }
 
-    console.log("✅ Wix Order Created:", { orderId, orderNumber });
+    console.log("✅ Wix Order Created:", { 
+      orderId, 
+      orderNumber,
+      paymentStatus: (order as any)?.paymentStatus,
+      channelInfo: (order as any)?.channelInfo,
+      checkoutId,
+    });
 
     return NextResponse.json({
       success: true,
       orderId,
       orderNumber,
+      paymentStatus: (order as any)?.paymentStatus,
+      channelInfo: (order as any)?.channelInfo,
       message: "Order created via webhook",
     });
   } catch (error: any) {
