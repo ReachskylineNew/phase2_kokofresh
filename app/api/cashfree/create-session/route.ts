@@ -38,12 +38,22 @@ export async function POST(req: NextRequest) {
       const origin = req.headers.get("origin") || req.nextUrl.origin;
       if (origin && origin !== "http://localhost:3000") {
         baseUrl = origin;
+        console.log("📡 Using request origin as base URL:", baseUrl);
       }
     }
     
-    // Final fallback
+    // Final fallback - check for common deployment URLs
     if (!baseUrl) {
-      baseUrl = process.env.NODE_ENV === "production" ? "https://kokofresh.in" : "http://localhost:3000";
+      // Check if we're on Vercel and can detect the deployment URL
+      const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null;
+      if (vercelUrl) {
+        baseUrl = vercelUrl;
+        console.log("📡 Using Vercel URL:", baseUrl);
+      } else {
+        // Fallback to production domain or localhost
+        baseUrl = process.env.NODE_ENV === "production" ? "https://kokofresh.in" : "http://localhost:3000";
+        console.log("📡 Using fallback URL:", baseUrl);
+      }
     }
 
     // Ensure URL has protocol and is properly formatted
@@ -88,7 +98,9 @@ export async function POST(req: NextRequest) {
     console.log("🔍 Environment:", {
       NEXT_PUBLIC_URL: process.env.NEXT_PUBLIC_URL ? "set" : "not set",
       NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL ? "set" : "not set",
+      VERCEL_URL: process.env.VERCEL_URL || "not set",
       NODE_ENV: process.env.NODE_ENV,
+      requestOrigin: req.headers.get("origin") || req.nextUrl.origin,
     });
 
     const payload = {

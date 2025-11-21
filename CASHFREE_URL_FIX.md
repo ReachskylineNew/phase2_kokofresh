@@ -37,24 +37,40 @@ Updated `app/api/cashfree/create-session/route.ts` with:
 
 ## Required Environment Variables
 
-**IMPORTANT**: Set these in your production environment (Vercel, etc.):
+**For Testing on Vercel** (e.g., `https://phase2-kokofresh-chi.vercel.app`):
 
+The code will automatically detect the Vercel deployment URL from:
+1. `NEXT_PUBLIC_URL` environment variable (recommended)
+2. `VERCEL_URL` environment variable (automatically set by Vercel)
+3. Request origin header
+4. Fallback to `https://kokofresh.in` in production
+
+**For Testing**: Set in Vercel:
+```env
+NEXT_PUBLIC_URL=https://phase2-kokofresh-chi.vercel.app
+```
+
+**For Production**: Set in Vercel:
 ```env
 NEXT_PUBLIC_URL=https://kokofresh.in
 ```
 
 Or alternatively:
 ```env
-NEXT_PUBLIC_SITE_URL=https://kokofresh.in
+NEXT_PUBLIC_SITE_URL=https://your-domain.com
 ```
 
 ## How to Set in Vercel
 
 1. Go to your Vercel project settings
 2. Navigate to "Environment Variables"
-3. Add `NEXT_PUBLIC_URL` with value `https://kokofresh.in`
-4. Make sure it's set for "Production" environment
+3. Add `NEXT_PUBLIC_URL` with value:
+   - For testing: `https://phase2-kokofresh-chi.vercel.app`
+   - For production: `https://kokofresh.in`
+4. Set for appropriate environment (Preview, Production, or both)
 5. Redeploy your application
+
+**Note**: Vercel automatically sets `VERCEL_URL` which the code can use as a fallback, but explicitly setting `NEXT_PUBLIC_URL` is recommended for consistency.
 
 ## Testing
 
