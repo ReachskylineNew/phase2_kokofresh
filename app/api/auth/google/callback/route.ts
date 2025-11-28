@@ -77,7 +77,8 @@ export async function GET(req: NextRequest) {
 
     // Call VELO sync
     const wixBackendUrl = process.env.NEXT_PUBLIC_WIX_BACKEND_URL || process.env.WIX_BACKEND_URL || "https://backend.kokofresh.in";
-    const wixRes = await fetch(`${wixBackendUrl}/_functions/syncSocialAuth`, {
+    const wixRes = await fetch(`https://backend.kokofresh.in/_functions/syncSocialAuth
+`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
